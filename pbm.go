@@ -60,6 +60,18 @@ func ReadPBM(filename string) (*PBM, error) {
 
 }
 
+func (pbm *PBM) Size() (int, int) {
+	return pbm.height, pbm.width
+}
+
+func (pbm *PBM) At(x, y int) bool {
+	return pbm.data[x][y]
+}
+
+func (pbm *PBM) Set(x, y int, value bool) {
+	pbm.data[x][y] = value
+}
+
 func main() {
 	ReadPBM("test.pbm")
 }
