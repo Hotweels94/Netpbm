@@ -26,7 +26,6 @@ func ReadPGM(filename string) (*PGM, error) {
 	scanner := bufio.NewScanner(file)
 
 	scanner.Scan()
-
 	magicNumber := scanner.Text()
 
 	for scanner.Scan() {
@@ -79,4 +78,38 @@ func ReadPGM(filename string) (*PGM, error) {
 
 	return &PGM{data, width, height, magicNumber, max}, nil
 
+}
+
+func (pgm *PGM) Size() (int, int) {
+	return pgm.height, pgm.width
+}
+
+func (pgm *PGM) At(x, y int) uint8 {
+	return pgm.data[x][y]
+}
+
+func (pgm *PGM) Set(x, y int, value uint8) {
+	pgm.data[x][y] = value
+}
+
+func (pgm *PGM) Save(filename string) error {
+	fileSave, error := os.Create(filename)
+	if error != nil {
+		return error
+	}
+
+	fmt.Fprintf(fileSave, "%s\n%d %d\n %d\n", pgm.magicNumber, pgm.width, pgm.height, pgm.max)
+
+	for i := range pgm.data {
+		for j := range pgm.data[i] {
+			fmt.Fprintf(fileSave, "%d ", pgm.data[i][j])
+		}
+		fmt.Fprintln(fileSave)
+	}
+	return nil
+}
+
+func main() {
+	pgm, _ := ReadPGM("test.pgm")
+	pgm.Save("jeveuxsavecastp")
 }
