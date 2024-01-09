@@ -45,8 +45,16 @@ func ReadPBM(filename string) (*PBM, error) {
 
 	if magicNumber == "P1" {
 		for i := 0; i < height; i++ {
+			scanner.Scan()
+			line := scanner.Text()
+			byteCase := strings.Fields(line)
 			for j := 0; j < width; j++ {
-				data[i][j] = scanner.Scan()
+				value, _ := strconv.Atoi(byteCase[j])
+				if value == 1 {
+					data[i][j] = true
+				} else {
+					data[i][j] = false
+				}
 			}
 		}
 	}
@@ -55,9 +63,7 @@ func ReadPBM(filename string) (*PBM, error) {
 
 	}
 
-	fmt.Printf("%+v\n", PBM{data, width, height, magicNumber})
 	return &PBM{data, width, height, magicNumber}, nil
-
 }
 
 func (pbm *PBM) Size() (int, int) {
@@ -70,6 +76,66 @@ func (pbm *PBM) At(x, y int) bool {
 
 func (pbm *PBM) Set(x, y int, value bool) {
 	pbm.data[x][y] = value
+}
+
+func (pbm *PBM) Save(filename string) error {
+	fileSave, _ := os.Create(filename)
+
+	fmt.Fprintf(fileSave, "%s\n%d %d\n", pbm.magicNumber, pbm.width, pbm.height)
+
+	for _, i := range pbm.data {
+		for _, j := range i {
+			if j {
+				fmt.Fprint(fileSave, "1 ")
+			} else {
+				fmt.Fprint(fileSave, "0 ")
+			}
+		}
+		fmt.Fprintln(fileSave)
+	}
+	return nil
+}
+
+func (pbm *PBM) Invert() {
+	for i := range pbm.data {
+		for j := range pbm.data[i] {
+			if pbm.data[i][j] == true {
+				pbm.data[i][j] = false
+			} else {
+				pbm.data[i][j] = true
+			}
+		}
+	}
+}
+
+func (pbm *PBM) Flip() {
+	for i := 0; i < pbm.height; i++ {
+		count := pbm.width - 1
+		for j := 0; j < pbm.width/2; j++ {
+			valTemp := pbm.data[i][j]
+			pbm.data[i][j] = pbm.data[i][count]
+			pbm.data[i][count] = valTemp
+			count--
+		}
+	}
+}
+
+func (pbm *PBM) Flop() {
+	for i := 0; i < pbm.height/2; i++ {
+		for j := 0; j < pbm.width; j++ {
+			count := pbm.height - 1
+			for k := 0; k < pbm.height/2; k++ {
+				valTemp := pbm.data[i][j]
+				pbm.data[i][j] = pbm.data[count][j]
+				pbm.data[count][j] = valTemp
+				count--
+			}
+		}
+	}
+}
+
+func (pbm *PBM) SetMagicNumber(magicNumber string) {
+	pbm.magicNumber = magicNumber
 }
 
 func main() {
