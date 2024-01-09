@@ -79,7 +79,10 @@ func (pbm *PBM) Set(x, y int, value bool) {
 }
 
 func (pbm *PBM) Save(filename string) error {
-	fileSave, _ := os.Create(filename)
+	fileSave, error := os.Create(filename)
+	if error != nil {
+		return error // Return the error if opening the file fails
+	}
 
 	fmt.Fprintf(fileSave, "%s\n%d %d\n", pbm.magicNumber, pbm.width, pbm.height)
 
@@ -136,8 +139,4 @@ func (pbm *PBM) Flop() {
 
 func (pbm *PBM) SetMagicNumber(magicNumber string) {
 	pbm.magicNumber = magicNumber
-}
-
-func main() {
-	ReadPBM("test.pbm")
 }
