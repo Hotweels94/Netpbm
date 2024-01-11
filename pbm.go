@@ -81,7 +81,7 @@ func (pbm *PBM) Set(x, y int, value bool) {
 func (pbm *PBM) Save(filename string) error {
 	fileSave, error := os.Create(filename)
 	if error != nil {
-		return error // Return the error if opening the file fails
+		return error
 	}
 
 	fmt.Fprintf(fileSave, "%s\n%d %d\n", pbm.magicNumber, pbm.width, pbm.height)
@@ -112,18 +112,6 @@ func (pbm *PBM) Invert() {
 }
 
 func (pbm *PBM) Flip() {
-	for i := 0; i < pbm.height; i++ {
-		count := pbm.width - 1
-		for j := 0; j < pbm.width/2; j++ {
-			valTemp := pbm.data[i][j]
-			pbm.data[i][j] = pbm.data[i][count]
-			pbm.data[i][count] = valTemp
-			count--
-		}
-	}
-}
-
-func (pbm *PBM) Flop() {
 	for i := 0; i < pbm.height/2; i++ {
 		for j := 0; j < pbm.width; j++ {
 			count := pbm.height - 1
@@ -133,6 +121,18 @@ func (pbm *PBM) Flop() {
 				pbm.data[count][j] = valTemp
 				count--
 			}
+		}
+	}
+}
+
+func (pbm *PBM) Flop() {
+	for i := 0; i < pbm.height; i++ {
+		count := pbm.width - 1
+		for j := 0; j < pbm.width/2; j++ {
+			valTemp := pbm.data[i][j]
+			pbm.data[i][j] = pbm.data[i][count]
+			pbm.data[i][count] = valTemp
+			count--
 		}
 	}
 }

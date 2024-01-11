@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ func ReadPGM(filename string) (*PGM, error) {
 	magicNumber := scanner.Text()
 
 	for scanner.Scan() {
-		if len(scanner.Text()) > 0 && scanner.Text()[0] == '#' {
+		if scanner.Text()[0] == '#' {
 			continue
 		}
 		break
@@ -109,7 +110,85 @@ func (pgm *PGM) Save(filename string) error {
 	return nil
 }
 
+func (pgm *PGM) Invert() {
+	for i := range pgm.data {
+		for j := range pgm.data[i] {
+			pgm.data[i][j] = uint8(pgm.max) - pgm.data[i][j]
+		}
+	}
+}
+
+func (pgm *PGM) Flip() {
+	for i := 0; i < pgm.height/2; i++ {
+		for j := 0; j < pgm.width; j++ {
+			count := pgm.height - 1
+			for k := 0; k < pgm.height/2; k++ {
+				valTemp := pgm.data[i][j]
+				pgm.data[i][j] = pgm.data[count][j]
+				pgm.data[count][j] = valTemp
+				count--
+			}
+		}
+	}
+}
+
+func (pgm *PGM) Flop() {
+	for i := 0; i < pgm.height; i++ {
+		count := pgm.width - 1
+		for j := 0; j < pgm.width/2; j++ {
+			valTemp := pgm.data[i][j]
+			pgm.data[i][j] = pgm.data[i][count]
+			pgm.data[i][count] = valTemp
+			count--
+		}
+	}
+}
+
+func (pgm *PGM) SetMagicNumber(magicNumber string) {
+	pgm.magicNumber = magicNumber
+}
+
+func (pgm *PGM) SetMaxValue(maxValue uint8) {
+
+	if maxValue > 255 || maxValue < 1 {
+		newMax := float64(maxValue) / float64(pgm.max)
+		for i := 0; i < pgm.height; i++ {
+			for j := 0; j < pgm.width; j++ {
+				pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) * float64(newMax)))
+			}
+		}
+	} else {
+		fmt.Println("Veuillez mettre une valeure comprise entre 1 et 255")
+	}
+	fmt.Println("Data:")
+	for _, row := range pgm.data {
+		for _, value := range row {
+			fmt.Print(value, " ")
+		}
+		fmt.Println()
+	}
+
+}
+
+func (pgm *PGM) Rotate90CW() {
+
+	rotateData := make([][]uint8, pgm.width)
+	for i := range rotateData {
+		rotateData[i] = make([]uint8, pgm.height)
+	}
+
+	for i := 0; i < pgm.height; i++ {
+		for j := 0; j < pgm.width; j++ {
+			d := pgm.height - j - 1
+			rotateData[i][d] = pgm.data[j][i]
+		}
+	}
+
+	pgm.width, pgm.height = pgm.height, pgm.width
+	pgm.data = rotateData
+}
+
 func main() {
 	pgm, _ := ReadPGM("test.pgm")
-	pgm.Save("jeveuxsavecastp")
+	pgm.SetMaxValue(20)
 }
