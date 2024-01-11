@@ -188,7 +188,7 @@ func (pgm *PGM) Rotate90CW() {
 	pgm.data = rotateData
 }
 
-func main() {
+/* func main() {
 	pgm, _ := ReadPGM("test.pgm")
 	pgm.SetMaxValue(20)
-}
+} */
