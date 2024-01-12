@@ -1,4 +1,4 @@
-package main
+package Netpbm
 
 import (
 	"bufio"
@@ -60,7 +60,18 @@ func ReadPBM(filename string) (*PBM, error) {
 	}
 
 	if magicNumber == "P4" {
-
+		reader := bufio.NewReader(file)
+		for i := 0; i < height; i++ {
+			for j := 0; j < width; j += 8 {
+				byteValue, _ := reader.ReadByte()
+				for bit := 7; bit >= 0; bit-- {
+					pixel := (byteValue >> bit) & 1
+					if j+7-bit < width {
+						data[i][j+7-bit] = pixel == 1
+					}
+				}
+			}
+		}
 	}
 
 	return &PBM{data, width, height, magicNumber}, nil
@@ -71,11 +82,11 @@ func (pbm *PBM) Size() (int, int) {
 }
 
 func (pbm *PBM) At(x, y int) bool {
-	return pbm.data[x][y]
+	return pbm.data[y][x]
 }
 
 func (pbm *PBM) Set(x, y int, value bool) {
-	pbm.data[x][y] = value
+	pbm.data[y][x] = value
 }
 
 func (pbm *PBM) Save(filename string) error {
@@ -111,21 +122,13 @@ func (pbm *PBM) Invert() {
 	}
 }
 
-func (pbm *PBM) Flip() {
+func (pbm *PBM) Flop() {
 	for i := 0; i < pbm.height/2; i++ {
-		for j := 0; j < pbm.width; j++ {
-			count := pbm.height - 1
-			for k := 0; k < pbm.height/2; k++ {
-				valTemp := pbm.data[i][j]
-				pbm.data[i][j] = pbm.data[count][j]
-				pbm.data[count][j] = valTemp
-				count--
-			}
-		}
+		pbm.data[i], pbm.data[pbm.height-i-1] = pbm.data[pbm.height-i-1], pbm.data[i]
 	}
 }
 
-func (pbm *PBM) Flop() {
+func (pbm *PBM) Flip() {
 	for i := 0; i < pbm.height; i++ {
 		count := pbm.width - 1
 		for j := 0; j < pbm.width/2; j++ {
@@ -140,3 +143,7 @@ func (pbm *PBM) Flop() {
 func (pbm *PBM) SetMagicNumber(magicNumber string) {
 	pbm.magicNumber = magicNumber
 }
+
+/* func main() {
+	ReadPBM("test.pbm")
+} */

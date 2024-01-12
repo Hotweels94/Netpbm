@@ -1,4 +1,4 @@
-package main
+package Netpbm
 
 import (
 	"bufio"
@@ -69,14 +69,6 @@ func ReadPGM(filename string) (*PGM, error) {
 
 	}
 
-	fmt.Println("Data:")
-	for _, row := range data {
-		for _, value := range row {
-			fmt.Print(value, " ")
-		}
-		fmt.Println()
-	}
-
 	return &PGM{data, width, height, magicNumber, max}, nil
 
 }
@@ -86,11 +78,11 @@ func (pgm *PGM) Size() (int, int) {
 }
 
 func (pgm *PGM) At(x, y int) uint8 {
-	return pgm.data[x][y]
+	return pgm.data[y][x]
 }
 
 func (pgm *PGM) Set(x, y int, value uint8) {
-	pgm.data[x][y] = value
+	pgm.data[y][x] = value
 }
 
 func (pgm *PGM) Save(filename string) error {
@@ -118,21 +110,13 @@ func (pgm *PGM) Invert() {
 	}
 }
 
-func (pgm *PGM) Flip() {
+func (pgm *PGM) Flop() {
 	for i := 0; i < pgm.height/2; i++ {
-		for j := 0; j < pgm.width; j++ {
-			count := pgm.height - 1
-			for k := 0; k < pgm.height/2; k++ {
-				valTemp := pgm.data[i][j]
-				pgm.data[i][j] = pgm.data[count][j]
-				pgm.data[count][j] = valTemp
-				count--
-			}
-		}
+		pgm.data[i], pgm.data[pgm.height-i-1] = pgm.data[pgm.height-i-1], pgm.data[i]
 	}
 }
 
-func (pgm *PGM) Flop() {
+func (pgm *PGM) Flip() {
 	for i := 0; i < pgm.height; i++ {
 		count := pgm.width - 1
 		for j := 0; j < pgm.width/2; j++ {
@@ -149,25 +133,17 @@ func (pgm *PGM) SetMagicNumber(magicNumber string) {
 }
 
 func (pgm *PGM) SetMaxValue(maxValue uint8) {
+	if maxValue >= 1 && maxValue <= 255 {
+		pgm.max = int(maxValue)
 
-	if maxValue > 255 || maxValue < 1 {
-		newMax := float64(maxValue) / float64(pgm.max)
 		for i := 0; i < pgm.height; i++ {
 			for j := 0; j < pgm.width; j++ {
-				pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) * float64(newMax)))
+				pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) / float64(pgm.max) * 255))
 			}
 		}
 	} else {
-		fmt.Println("Veuillez mettre une valeure comprise entre 1 et 255")
+		fmt.Println("Veuillez mettre une valeur comprise entre 1 et 255")
 	}
-	fmt.Println("Data:")
-	for _, row := range pgm.data {
-		for _, value := range row {
-			fmt.Print(value, " ")
-		}
-		fmt.Println()
-	}
-
 }
 
 func (pgm *PGM) Rotate90CW() {
@@ -188,7 +164,31 @@ func (pgm *PGM) Rotate90CW() {
 	pgm.data = rotateData
 }
 
+func (pgm *PGM) ToPBM() *PBM {
+	pbm := new(PBM)
+	pbm.magicNumber = "P1"
+	pbm.width = pgm.width
+	pbm.height = pgm.height
+
+	data := make([][]bool, pgm.height)
+	for i := range data {
+		data[i] = make([]bool, pgm.width)
+	}
+
+	for i := 0; i < pgm.height; i++ {
+		for j := 0; j < pgm.width; j++ {
+			if pgm.data[i][j] >= 1 {
+				data[i][j] = true
+			} else {
+				data[i][j] = false
+			}
+		}
+	}
+	pbm.data = data
+	return pbm
+}
+
 /* func main() {
 	pgm, _ := ReadPGM("test.pgm")
-	pgm.SetMaxValue(20)
+	pgm.ToPBM()
 } */
