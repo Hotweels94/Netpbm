@@ -1,4 +1,4 @@
-package Netpbm
+package main
 
 import (
 	"os"

@@ -1,4 +1,4 @@
-package Netpbm
+package main
 
 import (
 	"bufio"
@@ -14,6 +14,10 @@ type PPM struct {
 	width, height int
 	magicNumber   string
 	max           int
+}
+
+type Point struct {
+	X, Y int
 }
 
 type Pixel struct {
@@ -81,11 +85,11 @@ func (ppm *PPM) Size() (int, int) {
 }
 
 func (ppm *PPM) At(x, y int) Pixel {
-	return ppm.data[x][y]
+	return ppm.data[y][x]
 }
 
 func (ppm *PPM) Set(x, y int, value Pixel) {
-	ppm.data[x][y] = value
+	ppm.data[y][x] = value
 }
 
 func (ppm *PPM) Save(filename string) error {
@@ -173,7 +177,7 @@ func (ppm *PPM) Rotate90CW() {
 //
 //}
 
-func (ppm *PPM) ToPBM() *PBM {
+/* func (ppm *PPM) ToPBM() *PBM {
 	pbm := &PBM{
 		magicNumber: "P1",
 		width:       ppm.width,
@@ -195,9 +199,79 @@ func (ppm *PPM) ToPBM() *PBM {
 		}
 	}
 	return pbm
+} */
+
+// Pour la fonction DrawLine nous allons utiliser l'Algorithme de Bresenham.
+func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
+
+	// calcul du pas horizontal de notre droite
+	deltaX := p2.X - p1.X
+	if deltaX < 0 { // On utilisera les valeurs absolue de deltaX pour se diriger dans la bonne direction
+		deltaX = -deltaX
+	}
+
+	// calcul du pas vertical de notre droite
+	deltaY := p2.Y - p1.Y
+	if deltaY < 0 { // On utilisera les valeurs absolue de deltaY pour se diriger dans la bonne direction
+		deltaY = -deltaY
+	}
+
+	// Ici on calcul signX qui nous permet de savoir si on trace notre droite de gauche a droite ou l'inverse ( comme un coefficient directeur).
+	signX := -1 // Dans ce cas de droite a gauche.
+	if p1.X < p2.X {
+		signX = 1 // Dans ce cas de gauche a droite.
+	}
+
+	// Ici on calcul signY qui nous permet de savoir si on trace notre droite de bas en haut ou l'inverse.
+	signY := -1 // Dans ce cas de haut en bas. (C'est l'inverse de ce que l'on a en Math)
+	if p1.Y < p2.Y {
+		signY = 1 // Dans ce cas de bas en haut.
+	}
+
+	err := deltaX - deltaY
+
+	// Création de la boucle de dessin de notre droite.
+	for {
+
+		ppm.Set(p1.X, p1.Y, color)
+
+		// Cette Variable est utilisé pour savoir a quelle moment on va devoir avancer en direction de Y (verticalement)
+		err2 := 2 * err
+
+		// Si errIncr2 est supérieur a l'opposé de deltaY on doit avancer dans la direction X
+		if err2 > -deltaY {
+			err -= deltaY // On compense le fait que l'on a avancé dans la direction X
+			p1.X += signX // Et on fait le déplacement
+		}
+
+		// Si errIncr2 est inférieur a deltaX on doit avancer dans la direction Y
+		if err2 < deltaX {
+			err += deltaX // On compense le fait que l'on a avancé dans la direction Y
+			p1.Y += signY // Et on fait le déplacement
+		}
+
+		// Si la ligne a fini de se tracer on stop la boucle de dessin.
+		if p1.X == p2.X && p1.Y == p2.Y {
+			break
+		}
+	}
 }
 
-/* func main() {
+func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
+	p2 := Point{p1.X + width, p1.Y}
+	p3 := Point{p1.X + width, p1.Y + height}
+	p4 := Point{p1.X, p1.Y + height}
+
+	ppm.DrawLine(p1, p2, color)
+	ppm.DrawLine(p2, p3, color)
+	ppm.DrawLine(p3, p4, color)
+	ppm.DrawLine(p4, p1, color)
+}
+
+func main() {
 	ppm, _ := ReadPPM("test.ppm")
-	ppm.Flip()
-} */
+	point1 := Point{X: 1, Y: 1}
+	color := Pixel{R: 255, G: 0, B: 0}
+	ppm.DrawRectangle(point1, 8, 8, color)
+	ppm.Save("testsave.ppm")
+}
