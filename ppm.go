@@ -275,10 +275,18 @@ func (ppm *PPM) DrawFilledRectangle(p1 Point, width, height int, color Pixel) {
 	}
 }
 
+func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
+	ppm.DrawLine(p1, p2, color)
+	ppm.DrawLine(p2, p3, color)
+	ppm.DrawLine(p3, p1, color)
+}
+
 func main() {
 	ppm, _ := ReadPPM("test.ppm")
-	point1 := Point{X: 1, Y: 1}
+	point1 := Point{X: 5, Y: 1}
+	point2 := Point{X: 2, Y: 7}
+	point3 := Point{X: 8, Y: 7}
 	color := Pixel{R: 255, G: 0, B: 0}
-	ppm.DrawFilledRectangle(point1, 2, 8, color)
+	ppm.DrawTriangle(point1, point2, point3, color)
 	ppm.Save("testsave.ppm")
 }
