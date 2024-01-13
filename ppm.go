@@ -138,17 +138,16 @@ func (ppm *PPM) Flip() {
 }
 
 func (ppm *PPM) SetMagicNumber(magicNumber string) {
-
+	ppm.magicNumber = magicNumber
 }
 
 func (ppm *PPM) SetMaxValue(maxValue uint8) {
 	if maxValue <= 255 || maxValue >= 1 {
-		newMax := float64(maxValue) / float64(ppm.max)
 		for i := 0; i < ppm.height; i++ {
 			for j := 0; j < ppm.width; j++ {
-				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) * float64(newMax)))
-				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) * float64(newMax)))
-				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) * float64(newMax)))
+				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) / float64(ppm.max) * 255))
+				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) / float64(ppm.max) * 255))
+				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) / float64(ppm.max) * 255))
 			}
 		}
 	} else {
@@ -238,13 +237,13 @@ func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
 		// Cette Variable est utilisé pour savoir a quelle moment on va devoir avancer en direction de Y (verticalement)
 		err2 := 2 * err
 
-		// Si errIncr2 est supérieur a l'opposé de deltaY on doit avancer dans la direction X
+		// Si err2 est supérieur a l'opposé de deltaY on doit avancer dans la direction X
 		if err2 > -deltaY {
 			err -= deltaY // On compense le fait que l'on a avancé dans la direction X
 			p1.X += signX // Et on fait le déplacement
 		}
 
-		// Si errIncr2 est inférieur a deltaX on doit avancer dans la direction Y
+		// Si err2 est inférieur a deltaX on doit avancer dans la direction Y
 		if err2 < deltaX {
 			err += deltaX // On compense le fait que l'on a avancé dans la direction Y
 			p1.Y += signY // Et on fait le déplacement
