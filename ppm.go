@@ -208,33 +208,58 @@ func (ppm *PPM) Rotate90CW() {
 	ppm.data = rotateData
 }
 
-//func (ppm *PPM) ToPGM() *PGM {
-//
-//}
+func (ppm *PPM) ToPGM() *PGM {
 
-/* func (ppm *PPM) ToPBM() *PBM {
+	//Création de pgm reprenant le pointeur de la struct PGM avec les memes valurs pour width, height, magicNumber et max
+	pgm := &PGM{
+		magicNumber: "P2",
+		width:       ppm.width,
+		height:      ppm.height,
+		max:         ppm.max,
+	}
+
+	// Recréation de pgm.data
+	pgm.data = make([][]uint8, ppm.height)
+	for i := range pgm.data {
+		pgm.data[i] = make([]uint8, ppm.width)
+	}
+
+	// On parcourt la matrice et on prend la moyenne des 3 couleurs pour avoir une valeur de gris pour pgm.data
+	for i := 0; i < pgm.height; i++ {
+		for j := 0; j < pgm.width; j++ {
+			pgm.data[i][j] = (ppm.data[i][j].R + ppm.data[i][j].G + ppm.data[i][j].B) / 3
+		}
+	}
+
+	return pgm
+}
+
+func (ppm *PPM) ToPBM() *PBM {
+
+	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
 	pbm := &PBM{
 		magicNumber: "P1",
 		width:       ppm.width,
 		height:      ppm.height,
 	}
 
+	// Recréation de pbm.data
 	data := make([][]bool, ppm.height)
 	for i := range data {
 		data[i] = make([]bool, ppm.width)
 	}
 
+	// Création de lim qui est ma valeur qui détermine si mon pixel sera blanc ou noir (inférieur a lim c'est blanc et au dessus noir)
+	lim := uint8(ppm.max / 2)
+
 	for i := 0; i < ppm.height; i++ {
 		for j := 0; j < ppm.width; j++ {
-			if ppm.data[i][j].R == 0 && ppm.data[i][j].G == 0 && ppm.data[i][j].B == 0 {
-				data[i][j] = true
-			} else {
-				data[i][j] = false
-			}
+			// Convertir chaque pixel en noir ou blanc en fonction de la limite
+			pbm.data[i][j] = ppm.data[i][j].R > lim || ppm.data[i][j].G > lim || ppm.data[i][j].B > lim
 		}
 	}
 	return pbm
-} */
+}
 
 // Pour la fonction DrawLine nous allons utiliser l'Algorithme de Bresenham.
 func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
