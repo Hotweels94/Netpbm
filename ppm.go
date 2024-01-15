@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Création de la struct PGM
 type PPM struct {
 	data          [][]Pixel
 	width, height int
@@ -16,27 +17,35 @@ type PPM struct {
 	max           int
 }
 
+// Création de la fonction Point
 type Point struct {
 	X, Y int
 }
 
+// Création de la fonction Pixel
 type Pixel struct {
 	R, G, B uint8
 }
 
+// Fonction de lecture du fichier
 func ReadPPM(filename string) (*PPM, error) {
+
+	// On ouvre le fichier
 	file, error := os.Open(filename)
 	if error != nil {
 		fmt.Println("Erreur lors de l'ouverture du fichier")
 		return nil, error
 	}
-	defer file.Close()
+	defer file.Close() // Une fois que le fonction est terminée, on ferme le fichier
 
+	// On crée le scanner
 	scanner := bufio.NewScanner(file)
 
+	// on récupère le magicNumber
 	scanner.Scan()
 	magicNumber := scanner.Text()
 
+	// On vérifie si il y a un commentaire, si oui on le saute
 	for scanner.Scan() {
 		if scanner.Text()[0] == '#' {
 			continue
@@ -44,64 +53,75 @@ func ReadPPM(filename string) (*PPM, error) {
 		break
 	}
 
+	// On crée la variable scope qui va scanner la ligne de width entiérement puis on récupére independamment width et height
 	scope := strings.Split(scanner.Text(), " ")
 	width, _ := strconv.Atoi(scope[0])
 	height, _ := strconv.Atoi(scope[1])
 
+	// on récupère le max
 	scanner.Scan()
 	max, _ := strconv.Atoi(scanner.Text())
 
+	// On crée la matrice data qui va contenir chaque élément de notre fichier
 	data := make([][]Pixel, height)
 	for i := range data {
 		data[i] = make([]Pixel, width)
 	}
 
+	// Si le magicNumber est égal a P3 on parcours data case par case pour récupérer toutes les valeurs du tableau
 	if magicNumber == "P3" {
-
 		for i := 0; i < height; i++ {
 			scanner.Scan()
-			line := scanner.Text()
-			byteCaseRGB := strings.Fields(line)
+			line := scanner.Text()              // On scan chaque ligne
+			byteCaseRGB := strings.Fields(line) // On récupère chaque élément qui sont séparés par un espace
 			for j := 0; j < width; j++ {
-				r, _ := strconv.Atoi(byteCaseRGB[j*3])
-				g, _ := strconv.Atoi(byteCaseRGB[j*3+1])
-				b, _ := strconv.Atoi(byteCaseRGB[j*3+2])
-				data[i][j] = Pixel{uint8(r), uint8(g), uint8(b)}
+				r, _ := strconv.Atoi(byteCaseRGB[j*3])           // Rouge pour chaque premier élement de chaque bloc de 3 nombres
+				g, _ := strconv.Atoi(byteCaseRGB[j*3+1])         // Bleu pour chaque second élement de chaque bloc de 3 nombres
+				b, _ := strconv.Atoi(byteCaseRGB[j*3+2])         // Vert pour chaque troisiéme élement de chaque bloc de 3 nombres
+				data[i][j] = Pixel{uint8(r), uint8(g), uint8(b)} // Et data [i][j] est un rassemblement des 3 couleurs (r, g, b)
 			}
 		}
 	}
-	fmt.Println("Data:")
-	for _, row := range data {
-		for _, value := range row {
-			fmt.Print(value, " ")
-		}
-		fmt.Println()
+
+	if magicNumber == "P6" {
+
 	}
+
+	// On retourne chaque élément de la struct
 	return &PPM{data, width, height, magicNumber, max}, nil
 }
 
+// La fonction Size retourne les valeurs de height et width
 func (ppm *PPM) Size() (int, int) {
 	return ppm.height, ppm.width
 }
 
+// La fonction At retourne les valeurs de data a chaque position de la matrice
 func (ppm *PPM) At(x, y int) Pixel {
 	return ppm.data[y][x]
 }
 
+// La fonction Set définit la valeur du pixel en (x, y)
 func (ppm *PPM) Set(x, y int, value Pixel) {
 	ppm.data[y][x] = value
 }
 
+// Fonction de sauvegarde
 func (ppm *PPM) Save(filename string) error {
+
+	// On crée le fichier de sauvegarde nommé filename
 	fileSave, error := os.Create(filename)
 	if error != nil {
 		return error
 	}
 
+	// On écrit les valeurs de magicNumber, width, height et max dans le fichier de sauvegarde
 	fmt.Fprintf(fileSave, "%s\n%d %d\n %d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
 
+	// On parcours la matrice data
 	for i := range ppm.data {
 		for j := range ppm.data[i] {
+			// et on écrit chaque valeurs de data a sa bonne position dans le fichier de sauvegarde couleur par couleur
 			fmt.Fprintf(fileSave, "%d %d %d ", ppm.data[i][j].R, ppm.data[i][j].G, ppm.data[i][j].B)
 		}
 		fmt.Fprintln(fileSave)
@@ -109,9 +129,12 @@ func (ppm *PPM) Save(filename string) error {
 	return nil
 }
 
+// Fonction pour inverser les couleurs
 func (ppm *PPM) Invert() {
 	for i := range ppm.data {
-		for j := range ppm.data[i] {
+		for j := range ppm.data[i] { // On parcours la matrice
+
+			// On soustrait a data la valeur max pour avoir la valeur opposé et ce pour chaque couleur (pour r, pour g, pour b)
 			ppm.data[i][j].R = uint8(ppm.max) - ppm.data[i][j].R
 			ppm.data[i][j].G = uint8(ppm.max) - ppm.data[i][j].G
 			ppm.data[i][j].B = uint8(ppm.max) - ppm.data[i][j].B
@@ -119,16 +142,20 @@ func (ppm *PPM) Invert() {
 	}
 }
 
+// Fonction pour inverser l'image horizontallement
 func (ppm *PPM) Flop() {
-	for i := 0; i < ppm.height/2; i++ {
-		ppm.data[i], ppm.data[ppm.height-i-1] = ppm.data[ppm.height-i-1], ppm.data[i]
+	for i := 0; i < ppm.height/2; i++ { // On parcours verticalement la moitié de la matrice
+		ppm.data[i], ppm.data[ppm.height-i-1] = ppm.data[ppm.height-i-1], ppm.data[i] // Et on intervertit chaque pixel
 	}
 }
 
+// Fonction pour inverser l'image verticalement
 func (ppm *PPM) Flip() {
-	for i := 0; i < ppm.height; i++ {
-		count := ppm.width - 1
+	for i := 0; i < ppm.height; i++ { // On parcours notre matrice data
+		count := ppm.width - 1 // Création de notre compteur pour inverser l'image une seule fois
 		for j := 0; j < ppm.width/2; j++ {
+
+			// Utilisation d'une variable temporaire pour stocker notre valeur puis inversement
 			valTemp := ppm.data[i][j]
 			ppm.data[i][j] = ppm.data[i][count]
 			ppm.data[i][count] = valTemp
@@ -137,37 +164,46 @@ func (ppm *PPM) Flip() {
 	}
 }
 
+// Fonction pour choisir le magicNumber
 func (ppm *PPM) SetMagicNumber(magicNumber string) {
 	ppm.magicNumber = magicNumber
 }
 
+// Fonction pour changer de valeur de couleur max
 func (ppm *PPM) SetMaxValue(maxValue uint8) {
-	if maxValue <= 255 || maxValue >= 1 {
-		for i := 0; i < ppm.height; i++ {
+	if maxValue <= 255 || maxValue >= 1 { // On vérifie que maxValue soit compris entre 1 et 255 inclus
+		ppm.max = int(maxValue)
+
+		for i := 0; i < ppm.height; i++ { // On parcours la matrice
 			for j := 0; j < ppm.width; j++ {
+
+				// Chaque valeur de data est modifié selon le coefficient multiplicateur de maxValue et ce pour chaque couleur
 				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) / float64(ppm.max) * 255))
 				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) / float64(ppm.max) * 255))
 				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) / float64(ppm.max) * 255))
 			}
 		}
-	} else {
-		fmt.Println("Veuillez mettre une valeure comprise entre 1 et 255")
 	}
 }
 
+// Fonction pour faire faire un rotation a 90° dans le sens des aiguilles d'une montre a notre image
 func (ppm *PPM) Rotate90CW() {
+
+	// Création d'une nouvelle matrice rotateData pour stocker les données de rotation
 	rotateData := make([][]Pixel, ppm.width)
 	for i := range rotateData {
 		rotateData[i] = make([]Pixel, ppm.height)
 	}
 
+	// Parcours de la matrice d'origine pour effectuer la rotation
 	for i := 0; i < ppm.height; i++ {
 		for j := 0; j < ppm.width; j++ {
 			d := ppm.height - j - 1
-			rotateData[i][d] = ppm.data[j][i]
+			rotateData[i][d] = ppm.data[j][i] // Stockage des données de rotation dans la nouvelle matrice
 		}
 	}
 
+	// On mets à jour les dimensions et les données de l'image avec la matrice rotateData
 	ppm.width, ppm.height = ppm.height, ppm.width
 	ppm.data = rotateData
 }
@@ -256,37 +292,87 @@ func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
 	}
 }
 
+// Fonction pour dessiner un rectangle vide
 func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
+
+	// On créer les 3 coins du rectangle (+ p1 dans la fonction soit 4 points en tout)
 	p2 := Point{p1.X + width, p1.Y}
 	p3 := Point{p1.X + width, p1.Y + height}
 	p4 := Point{p1.X, p1.Y + height}
 
+	// On les relie tous de telle sorte a faire une boucle
 	ppm.DrawLine(p1, p2, color)
 	ppm.DrawLine(p2, p3, color)
 	ppm.DrawLine(p3, p4, color)
 	ppm.DrawLine(p4, p1, color)
 }
 
+// Fonction pour dessiner un rectangle plain
 func (ppm *PPM) DrawFilledRectangle(p1 Point, width, height int, color Pixel) {
+
+	// On parcours ligne par ligne notre matrice
 	for i := 0; i < height; i++ {
+
+		// point1 et point2 sont de part et d’autre de la longueur du rectangle
 		point1 := Point{p1.X, p1.Y + i}
 		point2 := Point{p1.X + width, p1.Y + i}
-		ppm.DrawLine(point1, point2, color)
+		ppm.DrawLine(point1, point2, color) // Et on les relie
 	}
 }
 
+// Fonction qui dessine un cercle plein
+func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
+
+	//Création des variables nécéssaires
+	x := radius - 1
+	y := 0
+	dx := 1
+	dy := 1
+	err := dx - (radius * 2)
+
+	// Tant que le cercle nes pas entièrement dessiné
+	for x > y {
+		// Colorit le pixel correspondant au bonnes coordonnées
+		ppm.Set(center.X+x, center.Y+y, color)
+		ppm.Set(center.X+y, center.Y+x, color)
+		ppm.Set(center.X-y, center.Y+x, color)
+		ppm.Set(center.X-x, center.Y+y, color)
+		ppm.Set(center.X-x, center.Y-y, color)
+		ppm.Set(center.X-y, center.Y-x, color)
+		ppm.Set(center.X+y, center.Y-x, color)
+		ppm.Set(center.X+x, center.Y-y, color)
+
+		// On adapte err suivant la direction du dessin et on compense l'avancement (Basé aussi sur l'algorithme de Bresenham)
+		if err <= 0 {
+			y++
+			err += dy
+			dy += 2
+		}
+		if err > 0 {
+			x--
+			dx += 2
+			err += dx - (radius * 2)
+		}
+	}
+}
+
+// Fonction qui dessine un cercle rempli
+func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
+
+}
+
+// Fonction qui dessine un triangle vide
 func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
+	// Il suffit de relier nos 3 points
 	ppm.DrawLine(p1, p2, color)
 	ppm.DrawLine(p2, p3, color)
 	ppm.DrawLine(p3, p1, color)
 }
 
-func main() {
+/* func main() {
 	ppm, _ := ReadPPM("test.ppm")
-	point1 := Point{X: 5, Y: 1}
-	point2 := Point{X: 2, Y: 7}
-	point3 := Point{X: 8, Y: 7}
+	point1 := Point{X: 8, Y: 8}
 	color := Pixel{R: 255, G: 0, B: 0}
-	ppm.DrawTriangle(point1, point2, point3, color)
+	ppm.DrawCircle(point1, 7, color)
 	ppm.Save("testsave.ppm")
-}
+} */
