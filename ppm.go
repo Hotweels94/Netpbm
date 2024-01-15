@@ -208,7 +208,7 @@ func (ppm *PPM) Rotate90CW() {
 	ppm.data = rotateData
 }
 
-func (ppm *PPM) ToPGM() *PGM {
+/*func (ppm *PPM) ToPGM() *PGM {
 
 	//Création de pgm reprenant le pointeur de la struct PGM avec les memes valurs pour width, height, magicNumber et max
 	pgm := &PGM{
@@ -232,9 +232,9 @@ func (ppm *PPM) ToPGM() *PGM {
 	}
 
 	return pgm
-}
+} */
 
-func (ppm *PPM) ToPBM() *PBM {
+/* func (ppm *PPM) ToPBM() *PBM {
 
 	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
 	pbm := &PBM{
@@ -259,7 +259,7 @@ func (ppm *PPM) ToPBM() *PBM {
 		}
 	}
 	return pbm
-}
+} */
 
 // Pour la fonction DrawLine nous allons utiliser l'Algorithme de Bresenham.
 func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
@@ -384,6 +384,16 @@ func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
 // Fonction qui dessine un cercle rempli
 func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
 
+	for i := center.X - radius; i <= center.X+radius; i++ {
+		for j := center.Y - radius; j <= center.Y+radius; j++ {
+			// Calcul de la distance entre le point parcourant le tour du cercle et le centre du cercle (Formule de distance entre 2 points dans un cercle)
+			distance := math.Sqrt((float64(i-center.X) * float64(i-center.X)) + (float64(j-center.Y) * float64(j-center.Y)))
+			// Si la distance est inférieure ou égale au rayon du cercle on colorie le pixel
+			if distance <= float64(radius) {
+				ppm.Set(i, j, color)
+			}
+		}
+	}
 }
 
 // Fonction qui dessine un triangle vide
@@ -394,10 +404,15 @@ func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
 	ppm.DrawLine(p3, p1, color)
 }
 
-/* func main() {
+// Fonction qui dessine un triangle plein
+func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
+
+}
+
+func main() {
 	ppm, _ := ReadPPM("test.ppm")
 	point1 := Point{X: 8, Y: 8}
 	color := Pixel{R: 255, G: 0, B: 0}
-	ppm.DrawCircle(point1, 7, color)
+	ppm.DrawFilledCircle(point1, 4, color)
 	ppm.Save("testsave.ppm")
-} */
+}

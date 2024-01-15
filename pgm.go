@@ -126,7 +126,7 @@ func (pgm *PGM) Save(filename string) error {
 // Fonction pour inverser les couleurs
 func (pgm *PGM) Invert() {
 	for i := range pgm.data {
-		for j := range pgm.data[i] { // On parcours le tableau
+		for j := range pgm.data[i] { // On parcours la matrice
 			pgm.data[i][j] = uint8(pgm.max) - pgm.data[i][j] // On soustrait a data la valeur max pour avoir la valeur opposé
 		}
 	}
@@ -222,8 +222,8 @@ func (pgm *PGM) ToPBM() *PBM {
 	return pbm
 }
 
-func main() {
+/* func main() {
 	pgm, _ := ReadPGM("test.pgm")
 	pbm := pgm.ToPBM()
 	pbm.Save("output.pbm")
-}
+} */
