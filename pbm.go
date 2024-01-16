@@ -70,16 +70,83 @@ func ReadPBM(filename string) (*PBM, error) {
 	}
 
 	if magicNumber == "P4" {
-		reader := bufio.NewReader(file)
+		ascii := 0
+		n := 0
+		for n <= width {
+			ascii += 1
+			n += 8
+
+		}
+
+		data3 := make([][]int, height)
+		for g := range data3 {
+			data3[g] = make([]int, ascii)
+		}
+
+		chars := make([][]rune, height)
+		for g := range chars {
+			chars[g] = make([]rune, ascii)
+		}
+
+		var bin string
+
+		datarune := make([][]string, height)
+		for m := range datarune {
+			datarune[m] = make([]string, ascii)
+		}
+
+		scanner.Scan()
+		a := scanner.Bytes()
+		x := 0
+		y := 0
+
+		for g := 0; g < len(a); g++ {
+			format := fmt.Sprintf("%s%d%s", "%0", 8, "b")
+			data3[y][x] = int(a[g])
+
+			bin = fmt.Sprintf(format, data3[y][x])
+
+			datarune[y][x] = bin
+
+			x++
+			if x == ascii {
+				x = 0
+				y = y + 1
+			}
+
+		}
+		datastring := make([]string, height)
+
 		for i := 0; i < height; i++ {
-			for j := 0; j < width; j += 8 {
-				byteValue, _ := reader.ReadByte()
-				for bit := 7; bit >= 0; bit-- {
-					pixel := (byteValue >> bit) & 1
-					if j+7-bit < width {
-						data[i][j+7-bit] = pixel == 1
-					}
+			for j := 0; j < ascii; j++ {
+				datastring[i] = datastring[i] + datarune[i][j]
+			}
+		}
+
+		datarune_padding := make([][]rune, height)
+		for m := range datarune_padding {
+			datarune_padding[m] = make([]rune, width)
+		}
+		for i := 0; i < height; i++ {
+			l := []rune(datastring[i])
+			for j := 0; j < width; j++ {
+
+				datarune_padding[i][j] = l[j]
+
+			}
+		}
+
+		for i := 0; i < height; i++ {
+			for j := 0; j < width; j++ {
+
+				if datarune_padding[i][j] == '0' {
+					data[i][j] = false
+
+				} else if datarune_padding[i][j] == '1' {
+					data[i][j] = true
+
 				}
+
 			}
 		}
 	}

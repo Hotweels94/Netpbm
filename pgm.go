@@ -224,6 +224,6 @@ func (pgm *PGM) ToPBM() *PBM {
 
 /* func main() {
 	pgm, _ := ReadPGM("test.pgm")
-	pbm := pgm.ToPBM()
-	pbm.Save("output.pbm")
+	pgm.SetMaxValue(100)
+	pgm.Save("output.pbm")
 } */

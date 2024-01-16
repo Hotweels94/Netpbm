@@ -171,16 +171,14 @@ func (ppm *PPM) SetMagicNumber(magicNumber string) {
 
 // Fonction pour changer de valeur de couleur max
 func (ppm *PPM) SetMaxValue(maxValue uint8) {
-	if maxValue <= 255 || maxValue >= 1 { // On vérifie que maxValue soit compris entre 1 et 255 inclus
+	if maxValue <= 255 || maxValue >= 1 {
+		newMax := float64(maxValue) / float64(ppm.max)
 		ppm.max = int(maxValue)
-
-		for i := 0; i < ppm.height; i++ { // On parcours la matrice
+		for i := 0; i < ppm.height; i++ {
 			for j := 0; j < ppm.width; j++ {
-
-				// Chaque valeur de data est modifié selon le coefficient multiplicateur de maxValue et ce pour chaque couleur
-				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) / float64(ppm.max) * 255))
-				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) / float64(ppm.max) * 255))
-				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) / float64(ppm.max) * 255))
+				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) * float64(newMax)))
+				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) * float64(newMax)))
+				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) * float64(newMax)))
 			}
 		}
 	}
@@ -208,6 +206,7 @@ func (ppm *PPM) Rotate90CW() {
 	ppm.data = rotateData
 }
 
+// Fonction pour convertir de PPM a PGM
 /*func (ppm *PPM) ToPGM() *PGM {
 
 	//Création de pgm reprenant le pointeur de la struct PGM avec les memes valurs pour width, height, magicNumber et max
@@ -234,6 +233,7 @@ func (ppm *PPM) Rotate90CW() {
 	return pgm
 } */
 
+// Fonction pour convertir de PPM a PBM
 /* func (ppm *PPM) ToPBM() *PBM {
 
 	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
@@ -406,13 +406,63 @@ func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
 
 // Fonction qui dessine un triangle plein
 func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
+	if p2.Y < p1.Y {
+		temp := p1
+		p1 = p2
+		p2 = temp
+	}
+	if p3.Y < p1.Y {
+		temp := p1
+		p1 = p3
+		p3 = temp
+	}
+	if p3.Y < p2.Y {
+		temp := p2
+		p2 = p3
+		p2 = temp
+	}
 
+	// Calcul des pentes des côtés du triangle
+	slope1 := float64(p2.X-p1.X) / float64(p2.Y-p1.Y)
+	slope2 := float64(p3.X-p1.X) / float64(p3.Y-p1.Y)
+	slope3 := float64(p3.X-p2.X) / float64(p3.Y-p2.Y)
+
+	// Initialisation des valeurs x pour chaque ligne du triangle
+	x1 := float64(p1.X)
+	x2 := float64(p1.X)
+
+	// Parcours de chaque ligne du triangle
+	for y := p1.Y; y <= p3.Y; y++ {
+		// Dessin des pixels entre les valeurs x
+		ppm.DrawLine(Point{X: int(x1), Y: y}, Point{X: int(x2), Y: y}, color)
+
+		// Mise à jour des valeurs x en fonction des pentes
+		if y < p2.Y {
+			x1 += slope1
+		} else {
+			x1 += slope2
+		}
+		x2 += slope3
+	}
+}
+
+// Fonction qui dessine un polygone vide
+func (ppm *PPM) DrawPolygon(points []Point, color Pixel) {
+	// On parcours tout les points un par un pour les relier entre eux
+	for i := 0; i < len(points)-1; i++ {
+		ppm.DrawLine(points[i], points[i+1], color)
+	}
+
+	// On trace la dernière droite du dernier au premier point
+	ppm.DrawLine(points[len(points)-1], points[0], color)
 }
 
 func main() {
 	ppm, _ := ReadPPM("test.ppm")
-	point1 := Point{X: 8, Y: 8}
 	color := Pixel{R: 255, G: 0, B: 0}
-	ppm.DrawFilledCircle(point1, 4, color)
+	point1 := Point{X: 1, Y: 3}
+	point2 := Point{X: 4, Y: 2}
+	point3 := Point{X: 8, Y: 3}
+	ppm.DrawTriangle(point1, point2, point3, color)
 	ppm.Save("testsave.ppm")
 }
