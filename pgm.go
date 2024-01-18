@@ -24,7 +24,7 @@ func ReadPGM(filename string) (*PGM, error) {
 	// Open the file
 	file, error := os.Open(filename)
 	if error != nil {
-		fmt.Println("Erreur lors de l'ouverture du fichier")
+		fmt.Println("Error opening the file")
 		return nil, error
 	}
 	defer file.Close() // Close the file once the function is done
@@ -268,24 +268,24 @@ func (pgm *PGM) SetMaxValue(maxValue uint8) {
 	}
 }
 
-// Fonction pour faire faire un rotation a 90° dans le sens des aiguilles d'une montre a notre image
+// Function to rotate the image 90° clockwise
 func (pgm *PGM) Rotate90CW() {
 
-	// Création d'une nouvelle matrice rotateData pour stocker les données de rotation
+	// Iterate over the original matrix to perform the rotation
 	rotateData := make([][]uint8, pgm.width)
 	for i := range rotateData {
 		rotateData[i] = make([]uint8, pgm.height)
 	}
 
-	// Parcours de la matrice d'origine pour effectuer la rotation
+	// Iterate over the original matrix to perform the rotation
 	for i := 0; i < pgm.height; i++ {
 		for j := 0; j < pgm.width; j++ {
 			d := pgm.height - j - 1
-			rotateData[i][d] = pgm.data[j][i] // Stockage des données de rotation dans la nouvelle matrice
+			rotateData[i][d] = pgm.data[j][i] // Store rotation data in the new matrix
 		}
 	}
 
-	// On mets à jour les dimensions et les données de l'image avec la matrice rotateData
+	// Update the dimensions and data of the image with the rotateData matrix
 	pgm.width, pgm.height = pgm.height, pgm.width
 	pgm.data = rotateData
 }
