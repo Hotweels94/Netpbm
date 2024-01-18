@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -260,10 +259,14 @@ func (pgm *PGM) SetMagicNumber(magicNumber string) {
 
 // Function to change the max color value
 func (pgm *PGM) SetMaxValue(maxValue uint8) {
-	pgm.max = int(maxValue)           // pgm.max Becomes new max value
-	for i := 0; i < pgm.height; i++ { // Iterate over the matrix
+	newMax := float64(maxValue) / float64(pgm.max) // newMax is our Multiplicator
+	pgm.max = int(maxValue)                        // pgm.max becomes our new max value
+
+	// We run through the matrix
+	for i := 0; i < pgm.height; i++ {
 		for j := 0; j < pgm.width; j++ {
-			pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) / float64(pgm.max) * 255)) // Modify each data value according to the maxValue multiplier
+			// We change the max
+			pgm.data[i][j] = uint8(float64(pgm.data[i][j]) * float64(newMax))
 		}
 	}
 }
