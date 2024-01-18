@@ -1,4 +1,4 @@
-package main
+package Netpbm
 
 import (
 	"bufio"
@@ -194,36 +194,19 @@ func (pgm *PGM) Rotate90CW() {
 	pgm.data = rotateData
 }
 
+// Fonction pour convertir de PGM a PBM
 func (pgm *PGM) ToPBM() *PBM {
-
-	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
 	pbm := &PBM{
+		data:        make([][]bool, pgm.height),
 		width:       pgm.width,
 		height:      pgm.height,
 		magicNumber: "P1",
 	}
-
-	// Recréation de pbm.data
-	pbm.data = make([][]bool, pgm.height)
-	for i := range pbm.data {
-		pbm.data[i] = make([]bool, pgm.width)
-	}
-
-	// Création de lim qui est ma valeur qui détermine si mon pixel sera blanc ou noir (inférieur a lim c'est blanc et au dessus noir)
-	lim := uint8(pgm.max / 2)
-
-	// On parcourt notre tableau et on lui ajoute la valeur correspondante a la bonne couleur
-	for i := 0; i < pgm.height; i++ {
-		for j := 0; j < pgm.width; j++ {
-			pbm.data[i][j] = pgm.data[i][j] > lim
+	for y := 0; y < pgm.height; y++ {
+		pbm.data[y] = make([]bool, pgm.width)
+		for x := 0; x < pgm.width; x++ {
+			pbm.data[y][x] = pgm.data[y][x] < uint8(pgm.max/2)
 		}
 	}
-
 	return pbm
 }
-
-/* func main() {
-	pgm, _ := ReadPGM("test.pgm")
-	pgm.SetMaxValue(100)
-	pgm.Save("output.pbm")
-} */

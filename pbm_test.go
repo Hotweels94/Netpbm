@@ -1,4 +1,4 @@
-package main
+package Netpbm
 
 import (
 	"os"
@@ -101,8 +101,8 @@ func TestReadPBM(t *testing.T) {
 
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm.data[y][x] != imageDataP1[i] {
 			t.Error("Wrong data")
 		}
@@ -126,8 +126,8 @@ func TestReadPBM(t *testing.T) {
 
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm.data[y][x] != imageDataP1[i] {
 			t.Error("Wrong data")
 		}
@@ -172,7 +172,10 @@ func TestSave(t *testing.T) {
 		t.Error(err)
 	}
 	pbm.SetMagicNumber("P1")
-	pbm.Save("./testImages/pbm/testP1Save.pbm")
+	err = pbm.Save("./testImages/pbm/testP1Save.pbm")
+	if err != nil {
+		t.Error(err)
+	}
 	pbm2, err := ReadPBM("./testImages/pbm/testP1Save.pbm")
 	if err != nil {
 		t.Error(err)
@@ -188,8 +191,8 @@ func TestSave(t *testing.T) {
 	}
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm2.data[y][x] != imageDataP1[i] {
 			t.Error("Wrong data")
 		}
@@ -200,7 +203,10 @@ func TestSave(t *testing.T) {
 		t.Error(err)
 	}
 	pbm.SetMagicNumber("P4")
-	pbm.Save("./testImages/pbm/testP4Save.pbm")
+	err = pbm.Save("./testImages/pbm/testP4Save.pbm")
+	if err != nil {
+		t.Error(err)
+	}
 	pbm2, err = ReadPBM("./testImages/pbm/testP4Save.pbm")
 	if err != nil {
 		t.Error(err)
@@ -216,8 +222,8 @@ func TestSave(t *testing.T) {
 	}
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm2.data[y][x] != imageDataP1[i] {
 			t.Error("Wrong data")
 		}
@@ -241,8 +247,8 @@ func TestInvert(t *testing.T) {
 	pbm.Invert()
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm.data[y][x] != imageDataInvert[i] {
 			t.Error("Wrong data")
 		}
@@ -257,8 +263,8 @@ func TestFlip(t *testing.T) {
 	pbm.Flip()
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm.data[y][x] != imageDataFlip[i] {
 			t.Error("Wrong data")
 		}
@@ -273,8 +279,8 @@ func TestFlop(t *testing.T) {
 	pbm.Flop()
 	// compare the data
 	for i := 0; i < imageWidth*imageHeight; i++ {
-		var x int = i % imageWidth
-		var y int = i / imageWidth
+		var x = i % imageWidth
+		var y = i / imageWidth
 		if pbm.data[y][x] != imageDataFlop[i] {
 			t.Error("Wrong data")
 		}

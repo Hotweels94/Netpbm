@@ -1,4 +1,4 @@
-package main
+package Netpbm
 
 import (
 	"bufio"
@@ -207,7 +207,7 @@ func (ppm *PPM) Rotate90CW() {
 }
 
 // Fonction pour convertir de PPM a PGM
-/*func (ppm *PPM) ToPGM() *PGM {
+func (ppm *PPM) ToPGM() *PGM {
 
 	//Création de pgm reprenant le pointeur de la struct PGM avec les memes valurs pour width, height, magicNumber et max
 	pgm := &PGM{
@@ -231,10 +231,10 @@ func (ppm *PPM) Rotate90CW() {
 	}
 
 	return pgm
-} */
+}
 
 // Fonction pour convertir de PPM a PBM
-/* func (ppm *PPM) ToPBM() *PBM {
+func (ppm *PPM) ToPBM() *PBM {
 
 	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
 	pbm := &PBM{
@@ -259,11 +259,10 @@ func (ppm *PPM) Rotate90CW() {
 		}
 	}
 	return pbm
-} */
+}
 
 // Pour la fonction DrawLine nous allons utiliser l'Algorithme de Bresenham.
 func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
-
 	// calcul du pas horizontal de notre droite
 	deltaX := p2.X - p1.X
 	if deltaX < 0 { // On utilisera les valeurs absolue de deltaX pour se diriger dans la bonne direction
@@ -293,7 +292,16 @@ func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
 	// Création de la boucle de dessin de notre droite.
 	for {
 
-		ppm.Set(p1.X, p1.Y, color)
+		// On vérifie que le pixel est dans les limites de l'image
+		if p1.X >= 0 && p1.X < ppm.width && p1.Y >= 0 && p1.Y < ppm.height {
+			// Ici on colorie le pixel
+			ppm.Set(p1.X, p1.Y, color)
+		}
+
+		// Si la ligne a fini de se tracer on stop la boucle de dessin.
+		if p1.X == p2.X && p1.Y == p2.Y {
+			break
+		}
 
 		// Cette Variable est utilisé pour savoir a quelle moment on va devoir avancer en direction de Y (verticalement)
 		err2 := 2 * err
@@ -310,8 +318,8 @@ func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
 			p1.Y += signY // Et on fait le déplacement
 		}
 
-		// Si la ligne a fini de se tracer on stop la boucle de dessin.
-		if p1.X == p2.X && p1.Y == p2.Y {
+		// Enfin on revérifie que le point est bien dans les limites
+		if p1.X < 0 || p1.X >= ppm.width || p1.Y < 0 || p1.Y >= ppm.height {
 			break
 		}
 	}
@@ -319,6 +327,21 @@ func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
 
 // Fonction pour dessiner un rectangle vide
 func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
+
+	// On vérifie que les points soit au bon endroits
+	if p1.X < 0 {
+		p1.X = 0
+	}
+	if p1.Y < 0 {
+		p1.Y = 0
+	}
+
+	if p1.X+width > ppm.width {
+		width = ppm.width - p1.X
+	}
+	if p1.Y+height > ppm.height {
+		height = ppm.height - p1.Y
+	}
 
 	// On créer les 3 coins du rectangle (+ p1 dans la fonction soit 4 points en tout)
 	p2 := Point{p1.X + width, p1.Y}
@@ -355,16 +378,42 @@ func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
 	dy := 1
 	err := dx - (radius * 2)
 
-	// Tant que le cercle nes pas entièrement dessiné
+	// Tant que le cercle n'es pas entièrement dessiné
 	for x > y {
-		// Colorit le pixel correspondant au bonnes coordonnées
-		ppm.Set(center.X+x, center.Y+y, color)
-		ppm.Set(center.X+y, center.Y+x, color)
-		ppm.Set(center.X-y, center.Y+x, color)
+		if x == radius-1 && y == 0 { // Top point
+			ppm.Set(center.X+x, center.Y+y+1, color)
+		} else {
+			ppm.Set(center.X+x, center.Y+y, color)
+		}
+
+		if x != y { // Avoid overwriting the top point with the right point
+			ppm.Set(center.X+y, center.Y+x, color)
+		}
+
+		if x == 0 && y == radius-1 { // Right point
+			ppm.Set(center.X-y, center.Y+x-1, color)
+		} else {
+			ppm.Set(center.X-y, center.Y+x, color)
+		}
+
 		ppm.Set(center.X-x, center.Y+y, color)
-		ppm.Set(center.X-x, center.Y-y, color)
-		ppm.Set(center.X-y, center.Y-x, color)
-		ppm.Set(center.X+y, center.Y-x, color)
+
+		if x == -radius+1 && y == 0 { // Bottom point
+			ppm.Set(center.X-x, center.Y-y-1, color)
+		} else {
+			ppm.Set(center.X-x, center.Y-y, color)
+		}
+
+		if x != y { // Avoid overwriting the bottom point with the left point
+			ppm.Set(center.X-y, center.Y-x, color)
+		}
+
+		if x == 0 && y == -radius+1 { // Left point
+			ppm.Set(center.X+y, center.Y-x+1, color)
+		} else {
+			ppm.Set(center.X+y, center.Y-x, color)
+		}
+
 		ppm.Set(center.X+x, center.Y-y, color)
 
 		// On adapte err suivant la direction du dessin et on compense l'avancement (Basé aussi sur l'algorithme de Bresenham)
@@ -406,44 +455,7 @@ func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
 
 // Fonction qui dessine un triangle plein
 func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
-	if p2.Y < p1.Y {
-		temp := p1
-		p1 = p2
-		p2 = temp
-	}
-	if p3.Y < p1.Y {
-		temp := p1
-		p1 = p3
-		p3 = temp
-	}
-	if p3.Y < p2.Y {
-		temp := p2
-		p2 = p3
-		p2 = temp
-	}
 
-	// Calcul des pentes des côtés du triangle
-	slope1 := float64(p2.X-p1.X) / float64(p2.Y-p1.Y)
-	slope2 := float64(p3.X-p1.X) / float64(p3.Y-p1.Y)
-	slope3 := float64(p3.X-p2.X) / float64(p3.Y-p2.Y)
-
-	// Initialisation des valeurs x pour chaque ligne du triangle
-	x1 := float64(p1.X)
-	x2 := float64(p1.X)
-
-	// Parcours de chaque ligne du triangle
-	for y := p1.Y; y <= p3.Y; y++ {
-		// Dessin des pixels entre les valeurs x
-		ppm.DrawLine(Point{X: int(x1), Y: y}, Point{X: int(x2), Y: y}, color)
-
-		// Mise à jour des valeurs x en fonction des pentes
-		if y < p2.Y {
-			x1 += slope1
-		} else {
-			x1 += slope2
-		}
-		x2 += slope3
-	}
 }
 
 // Fonction qui dessine un polygone vide
