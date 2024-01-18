@@ -2,6 +2,7 @@ package Netpbm
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-// Création de la struct PGM
+// Definition of the PGM struct
 type PGM struct {
 	data          [][]uint8
 	width, height int
@@ -17,25 +18,25 @@ type PGM struct {
 	max           int
 }
 
-// Fonction de lecture du fichier
+// Function to read the file
 func ReadPGM(filename string) (*PGM, error) {
 
-	// on ouvre le fichier
+	// Open the file
 	file, error := os.Open(filename)
 	if error != nil {
 		fmt.Println("Erreur lors de l'ouverture du fichier")
 		return nil, error
 	}
-	defer file.Close() // Une fois que le fonction est terminée, on ferme le fichier
+	defer file.Close() // Close the file once the function is done
 
-	// On crée le scanner
+	// Create the scanner
 	scanner := bufio.NewScanner(file)
 
-	// on récupère le magicNumber
+	// Get the magicNumber
 	scanner.Scan()
 	magicNumber := scanner.Text()
 
-	// On vérifie si il y a un commentaire, si oui on le saute
+	// Check if there is a comment, if yes, skip it
 	for scanner.Scan() {
 		if scanner.Text()[0] == '#' {
 			continue
@@ -43,109 +44,207 @@ func ReadPGM(filename string) (*PGM, error) {
 		break
 	}
 
-	// On crée la variable scope qui va scanner la ligne de width entiérement puis on récupére independamment width et height
+	// Create the scope variable that will scan the width line entirely, then independently retrieve width and height
 	scope := strings.Split(scanner.Text(), " ")
 	width, _ := strconv.Atoi(scope[0])
 	height, _ := strconv.Atoi(scope[1])
 
-	// on récupère le max
+	// Retrieve the max value
 	scanner.Scan()
 	max, _ := strconv.Atoi(scanner.Text())
 
-	// On crée la matrice data qui va contenir chaque élément de notre fichier
+	// Create the data matrix that will contain each element of our file
 	data := make([][]uint8, height)
 	for i := range data {
 		data[i] = make([]uint8, width)
 	}
 
-	// Si le magicNumber est égal a P2 on parcours data case par case pour récupérer toutes les valeurs du tableau
+	// If the magicNumber is equal to P2, iterate over the data matrix to retrieve all values
 	if magicNumber == "P2" {
 		for i := 0; i < height; i++ {
 			scanner.Scan()
-			line := scanner.Text()           // On scan chaque ligne
-			byteCase := strings.Fields(line) // On récupère chaque élément qui sont séparés par un espace
+			line := scanner.Text()           // Scan each line
+			byteCase := strings.Fields(line) // Retrieve each element separated by a space
 
 			if len(byteCase) < width {
 				break
 			}
 
 			for j := 0; j < width; j++ {
-				value, _ := strconv.Atoi(byteCase[j]) // Enfin on récupére la valeur
-				data[i][j] = uint8(value)             // Et on l'ajoute au tableau en la convertissant dans la bonne unité
+				value, _ := strconv.Atoi(byteCase[j]) // Finally, retrieve the value
+				data[i][j] = uint8(value)             // Add it to the matrix, converting it to the correct unit
 			}
 		}
 	}
 
-	// Si le magicNumber est égal a P2 on parcours data case par case pour récupérer toutes les valeurs du tableau
+	// If the magicNumber is equal to P5:
 	if magicNumber == "P5" {
+		var bin string
 
+		// Create a matrix to store characters as a string of 8 bits
+		databin := make([][]string, height)
+		for m := range databin {
+			databin[m] = make([]string, width)
+		}
+
+		// Retrieve the data into a byte array
+		scanner.Scan()
+		a := scanner.Bytes()
+		x := 0
+		y := 0
+
+		for g := 0; g < len(a); g++ {
+
+			// Convert the different characters into a string of 8 bits
+			format := fmt.Sprintf("%s%d%s", "%0", 8, "b")
+
+			bin = fmt.Sprintf(format, a[g])
+
+			// Complete the matrix
+			databin[y][x] = bin
+
+			x++
+			if x == width {
+				x = 0
+				y = y + 1
+			}
+
+		}
+
+		// Convert the bit strings to uint8
+		for i := 0; i < height; i++ {
+			for j := 0; j < width; j++ {
+				result, err := strconv.ParseInt(databin[i][j], 2, 0)
+
+				if err != nil {
+					fmt.Println("Error:", err)
+				}
+
+				data[i][j] = uint8(result) // Fill data with our final converted values
+
+			}
+		}
 	}
 
-	// On retourne chaque élément de la struct
+	// Return each element of the struct
 	return &PGM{data, width, height, magicNumber, max}, nil
 
 }
 
-// La fonction Size retourne les valeurs de height et width
+// Function Size returns the values of height and width
 func (pgm *PGM) Size() (int, int) {
 	return pgm.height, pgm.width
 }
 
-// La fonction At retourne les valeurs de data a chaque position de la matrice
+// Function At returns the values of data at each position in the matrix
 func (pgm *PGM) At(x, y int) uint8 {
 	return pgm.data[y][x]
 }
 
-// La fonction Set définit la valeur du pixel en (x, y)
+// Function Set sets the value of the pixel at (x, y)
 func (pgm *PGM) Set(x, y int, value uint8) {
 	pgm.data[y][x] = value
 }
 
-// Fonction de sauvegarde
+// Save function
 func (pgm *PGM) Save(filename string) error {
 
-	// On crée le fichier de sauvegarde nommé filename
+	// Create the save file named filename
 	fileSave, error := os.Create(filename)
 	if error != nil {
 		return error
 	}
+	defer fileSave.Close() // Once the function is done, close the file
 
-	// On écrit les valeurs de magicNumber, width, height et max dans le fichier de sauvegarde
-	fmt.Fprintf(fileSave, "%s\n%d %d\n %d\n", pgm.magicNumber, pgm.width, pgm.height, pgm.max)
+	// If the magicNumber is P2
+	if pgm.magicNumber == "P2" {
+		// Write the values of magicNumber, width, height, and max to the save file
+		fmt.Fprintf(fileSave, "%s\n%d %d\n%d\n", pgm.magicNumber, pgm.width, pgm.height, pgm.max)
 
-	// On parcours la matrice data
-	for i := range pgm.data {
-		for j := range pgm.data[i] {
-			fmt.Fprintf(fileSave, "%d ", pgm.data[i][j]) // et on écrit chaque valeurs de data a sa bonne position dans le fichier de sauvegarde
+		// Iterate over the data matrix
+		for i := range pgm.data {
+			for j := range pgm.data[i] {
+				fmt.Fprintf(fileSave, "%d ", pgm.data[i][j]) // Write each value of data to its correct position in the save file
+			}
+			fmt.Fprintln(fileSave)
 		}
-		fmt.Fprintln(fileSave)
 	}
+
+	if pgm.magicNumber == "P5" {
+
+		// Write to FileSave (with the correct format) the values of magicNumber, width, height, and max
+		fmt.Fprintf(fileSave, "%s\n%d %d\n%d\n", pgm.magicNumber, pgm.width, pgm.height, pgm.max)
+
+		// Retrieve the values of each pixel as a string of 8 bits
+		datastring_bin := make([][]string, pgm.height)
+		for m := range datastring_bin {
+			datastring_bin[m] = make([]string, pgm.width)
+		}
+		// Convert the values of the pixels to a string of 8 bits
+		for i := 0; i < pgm.height; i++ {
+			for j := 0; j < pgm.height; j++ {
+				datastring_bin[i][j] = strconv.FormatInt(int64(pgm.data[i][j]), 2)
+
+			}
+		}
+
+		// Convert the values of each pixel to an 8-bit version in hexadecimal form
+		for i := 0; i < pgm.height; i++ {
+			for j := 0; j < pgm.width; j++ {
+
+				ui, err := strconv.ParseUint(datastring_bin[i][j], 2, 64)
+				if err != nil {
+					return err
+				}
+				hexa := fmt.Sprintf("%x", ui)
+				if len(hexa)%2 == 0 {
+
+					datastring_bin[i][j] = hexa
+				} else {
+					datastring_bin[i][j] = "0" + hexa
+				}
+			}
+		}
+
+		// Decode hexadecimal into a readable character
+		for i := 0; i < pgm.height; i++ {
+			for j := 0; j < pgm.width; j++ {
+				decoded, err := hex.DecodeString(datastring_bin[i][j])
+				if err != nil {
+					fmt.Println("Hexadecimal decoding error:", err)
+					return err
+				}
+				fmt.Fprintf(fileSave, string(decoded)) // Finally, write our result to the save file
+			}
+		}
+	}
+
 	return nil
 }
 
-// Fonction pour inverser les couleurs
+// Function to invert colors
 func (pgm *PGM) Invert() {
 	for i := range pgm.data {
-		for j := range pgm.data[i] { // On parcours la matrice
-			pgm.data[i][j] = uint8(pgm.max) - pgm.data[i][j] // On soustrait a data la valeur max pour avoir la valeur opposé
+		for j := range pgm.data[i] { // Iterate over the matrix
+			pgm.data[i][j] = uint8(pgm.max) - pgm.data[i][j] // Subtract max from data to get the opposite value
 		}
 	}
 }
 
-// Fonction pour inverser l'image horizontallement
+// Function to horizontally flip the image
 func (pgm *PGM) Flop() {
-	for i := 0; i < pgm.height/2; i++ { // On parcours verticalement la moitié de la matrice
-		pgm.data[i], pgm.data[pgm.height-i-1] = pgm.data[pgm.height-i-1], pgm.data[i] // Et on intervertit chaque pixel
+	for i := 0; i < pgm.height/2; i++ { // Iterate vertically over half of the matrix
+		pgm.data[i], pgm.data[pgm.height-i-1] = pgm.data[pgm.height-i-1], pgm.data[i] // Swap each pixel
 	}
 }
 
-// Fonction pour inverser l'image verticalement
+// Function to vertically flip the image
 func (pgm *PGM) Flip() {
-	for i := 0; i < pgm.height; i++ { // On parcours notre matrice data
-		count := pgm.width - 1 // Création de notre compteur pour inverser l'image une seule fois
+	for i := 0; i < pgm.height; i++ { // Iterate over our data matrix
+		count := pgm.width - 1 // Create our counter to flip the image only once
 		for j := 0; j < pgm.width/2; j++ {
 
-			// Utilisation d'une variable temporaire pour stocker notre valeur puis inversement
+			// Use a temporary variable to store our value and then swap
 			valTemp := pgm.data[i][j]
 			pgm.data[i][j] = pgm.data[i][count]
 			pgm.data[i][count] = valTemp
@@ -154,20 +253,17 @@ func (pgm *PGM) Flip() {
 	}
 }
 
-// Fonction pour choisir le magicNumber
+// Function to set the magicNumber
 func (pgm *PGM) SetMagicNumber(magicNumber string) {
 	pgm.magicNumber = magicNumber
 }
 
-// Fonction pour changer de valeur de couleur max
+// Function to change the max color value
 func (pgm *PGM) SetMaxValue(maxValue uint8) {
-	if maxValue >= 1 && maxValue <= 255 { // On vérifie que maxValue soit compris entre 1 et 255 inclus
-		pgm.max = int(maxValue)
-
-		for i := 0; i < pgm.height; i++ { // On parcours la matrice
-			for j := 0; j < pgm.width; j++ {
-				pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) / float64(pgm.max) * 255)) // Chaque valeur de data est modifié selon le coefficient multiplicateur de maxValue
-			}
+	pgm.max = int(maxValue)           // pgm.max Becomes new max value
+	for i := 0; i < pgm.height; i++ { // Iterate over the matrix
+		for j := 0; j < pgm.width; j++ {
+			pgm.data[i][j] = uint8(math.Round(float64(pgm.data[i][j]) / float64(pgm.max) * 255)) // Modify each data value according to the maxValue multiplier
 		}
 	}
 }
@@ -194,17 +290,22 @@ func (pgm *PGM) Rotate90CW() {
 	pgm.data = rotateData
 }
 
-// Fonction pour convertir de PGM a PBM
+// ToPBM converts a PGM image to a PBM image.
 func (pgm *PGM) ToPBM() *PBM {
+
+	// Recreate the PBM matrix
 	pbm := &PBM{
 		data:        make([][]bool, pgm.height),
 		width:       pgm.width,
 		height:      pgm.height,
 		magicNumber: "P1",
 	}
+
+	// Iterate over the PGM matrix
 	for y := 0; y < pgm.height; y++ {
 		pbm.data[y] = make([]bool, pgm.width)
 		for x := 0; x < pgm.width; x++ {
+			// Convert each pixel value to a boolean value based on the limit
 			pbm.data[y][x] = pgm.data[y][x] < uint8(pgm.max/2)
 		}
 	}

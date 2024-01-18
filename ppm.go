@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Création de la struct PGM
+// Creating the PPM struct
 type PPM struct {
 	data          [][]Pixel
 	width, height int
@@ -17,35 +17,35 @@ type PPM struct {
 	max           int
 }
 
-// Création de la fonction Point
+// Creating the Point Struct
 type Point struct {
 	X, Y int
 }
 
-// Création de la fonction Pixel
+// Creating the Pixel Struct
 type Pixel struct {
 	R, G, B uint8
 }
 
-// Fonction de lecture du fichier
+// Function for reading the file
 func ReadPPM(filename string) (*PPM, error) {
 
-	// On ouvre le fichier
+	// Open the file
 	file, error := os.Open(filename)
 	if error != nil {
-		fmt.Println("Erreur lors de l'ouverture du fichier")
+		fmt.Println("Error opening the file")
 		return nil, error
 	}
-	defer file.Close() // Une fois que le fonction est terminée, on ferme le fichier
+	defer file.Close() // Close the file once the function is done
 
-	// On crée le scanner
+	// Create the scanner
 	scanner := bufio.NewScanner(file)
 
-	// on récupère le magicNumber
+	// Get the magicNumber
 	scanner.Scan()
 	magicNumber := scanner.Text()
 
-	// On vérifie si il y a un commentaire, si oui on le saute
+	// Check for comments and skip them if present
 	for scanner.Scan() {
 		if scanner.Text()[0] == '#' {
 			continue
@@ -53,75 +53,76 @@ func ReadPPM(filename string) (*PPM, error) {
 		break
 	}
 
-	// On crée la variable scope qui va scanner la ligne de width entiérement puis on récupére independamment width et height
+	// Create the scope variable to scan the width line entirely, then retrieve width and height independently
 	scope := strings.Split(scanner.Text(), " ")
 	width, _ := strconv.Atoi(scope[0])
 	height, _ := strconv.Atoi(scope[1])
 
-	// on récupère le max
+	// Get the max value
 	scanner.Scan()
 	max, _ := strconv.Atoi(scanner.Text())
 
-	// On crée la matrice data qui va contenir chaque élément de notre fichier
+	// Create the data matrix to store each element of the file
 	data := make([][]Pixel, height)
 	for i := range data {
 		data[i] = make([]Pixel, width)
 	}
 
-	// Si le magicNumber est égal a P3 on parcours data case par case pour récupérer toutes les valeurs du tableau
+	// If the magicNumber is P3, iterate through data cell by cell to retrieve all values from the array
 	if magicNumber == "P3" {
 		for i := 0; i < height; i++ {
 			scanner.Scan()
-			line := scanner.Text()              // On scan chaque ligne
-			byteCaseRGB := strings.Fields(line) // On récupère chaque élément qui sont séparés par un espace
+			line := scanner.Text()              // We scan each line
+			byteCaseRGB := strings.Fields(line) // We retrieve each element separated by a space
 			for j := 0; j < width; j++ {
-				r, _ := strconv.Atoi(byteCaseRGB[j*3])           // Rouge pour chaque premier élement de chaque bloc de 3 nombres
-				g, _ := strconv.Atoi(byteCaseRGB[j*3+1])         // Bleu pour chaque second élement de chaque bloc de 3 nombres
-				b, _ := strconv.Atoi(byteCaseRGB[j*3+2])         // Vert pour chaque troisiéme élement de chaque bloc de 3 nombres
-				data[i][j] = Pixel{uint8(r), uint8(g), uint8(b)} // Et data [i][j] est un rassemblement des 3 couleurs (r, g, b)
+				r, _ := strconv.Atoi(byteCaseRGB[j*3])           // Red for each first element of each block of 3 numbers
+				g, _ := strconv.Atoi(byteCaseRGB[j*3+1])         // Blue for each second element in each block of 3 numbers
+				b, _ := strconv.Atoi(byteCaseRGB[j*3+2])         // Green for each third element in each block of 3 numbers
+				data[i][j] = Pixel{uint8(r), uint8(g), uint8(b)} // And data [i][j] is a collection of the 3 colors (r, g, b)
 			}
 		}
 	}
 
+	// If magic Number is P6
 	if magicNumber == "P6" {
 
 	}
 
-	// On retourne chaque élément de la struct
+	// Return each element of the struct
 	return &PPM{data, width, height, magicNumber, max}, nil
 }
 
-// La fonction Size retourne les valeurs de height et width
+// The Size function returns the values of height and width
 func (ppm *PPM) Size() (int, int) {
 	return ppm.height, ppm.width
 }
 
-// La fonction At retourne les valeurs de data a chaque position de la matrice
+// The At function returns the values of data at each position in the matrix
 func (ppm *PPM) At(x, y int) Pixel {
 	return ppm.data[y][x]
 }
 
-// La fonction Set définit la valeur du pixel en (x, y)
+// The Set function sets the value of the pixel at (x, y)
 func (ppm *PPM) Set(x, y int, value Pixel) {
 	ppm.data[y][x] = value
 }
 
-// Fonction de sauvegarde
+// Save function
 func (ppm *PPM) Save(filename string) error {
 
-	// On crée le fichier de sauvegarde nommé filename
+	// Create the save file named filename
 	fileSave, error := os.Create(filename)
 	if error != nil {
 		return error
 	}
 
-	// On écrit les valeurs de magicNumber, width, height et max dans le fichier de sauvegarde
+	// Write the values of magicNumber, width, height, and max to the save file
 	fmt.Fprintf(fileSave, "%s\n%d %d\n %d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
 
-	// On parcours la matrice data
+	// Iterate through the data matrix
 	for i := range ppm.data {
 		for j := range ppm.data[i] {
-			// et on écrit chaque valeurs de data a sa bonne position dans le fichier de sauvegarde couleur par couleur
+			// Write each value of data to its correct position in the save file, color by color
 			fmt.Fprintf(fileSave, "%d %d %d ", ppm.data[i][j].R, ppm.data[i][j].G, ppm.data[i][j].B)
 		}
 		fmt.Fprintln(fileSave)
@@ -129,12 +130,12 @@ func (ppm *PPM) Save(filename string) error {
 	return nil
 }
 
-// Fonction pour inverser les couleurs
+// Function to invert colors
 func (ppm *PPM) Invert() {
 	for i := range ppm.data {
-		for j := range ppm.data[i] { // On parcours la matrice
+		for j := range ppm.data[i] { // Browse the matrix
 
-			// On soustrait a data la valeur max pour avoir la valeur opposé et ce pour chaque couleur (pour r, pour g, pour b)
+			// subtract a data from the max value to obtain the opposite value for each color (for r, for g, for b)
 			ppm.data[i][j].R = uint8(ppm.max) - ppm.data[i][j].R
 			ppm.data[i][j].G = uint8(ppm.max) - ppm.data[i][j].G
 			ppm.data[i][j].B = uint8(ppm.max) - ppm.data[i][j].B
@@ -142,20 +143,20 @@ func (ppm *PPM) Invert() {
 	}
 }
 
-// Fonction pour inverser l'image horizontallement
+// Function to horizontally flip the image
 func (ppm *PPM) Flop() {
-	for i := 0; i < ppm.height/2; i++ { // On parcours verticalement la moitié de la matrice
-		ppm.data[i], ppm.data[ppm.height-i-1] = ppm.data[ppm.height-i-1], ppm.data[i] // Et on intervertit chaque pixel
+	for i := 0; i < ppm.height/2; i++ { // We vertically traverse half of the matrix
+		ppm.data[i], ppm.data[ppm.height-i-1] = ppm.data[ppm.height-i-1], ppm.data[i] // And invert each pixel
 	}
 }
 
-// Fonction pour inverser l'image verticalement
+// Function to vertically flip the image
 func (ppm *PPM) Flip() {
-	for i := 0; i < ppm.height; i++ { // On parcours notre matrice data
-		count := ppm.width - 1 // Création de notre compteur pour inverser l'image une seule fois
+	for i := 0; i < ppm.height; i++ { // Run through our data matrix
+		count := ppm.width - 1 // Creation of our counter to invert the image once only
 		for j := 0; j < ppm.width/2; j++ {
 
-			// Utilisation d'une variable temporaire pour stocker notre valeur puis inversement
+			// Use a temporary variable to store our value and vice versa
 			valTemp := ppm.data[i][j]
 			ppm.data[i][j] = ppm.data[i][count]
 			ppm.data[i][count] = valTemp
@@ -164,18 +165,21 @@ func (ppm *PPM) Flip() {
 	}
 }
 
-// Fonction pour choisir le magicNumber
+// Function to set the magicNumber
 func (ppm *PPM) SetMagicNumber(magicNumber string) {
 	ppm.magicNumber = magicNumber
 }
 
-// Fonction pour changer de valeur de couleur max
+// Function to change the max color value
 func (ppm *PPM) SetMaxValue(maxValue uint8) {
 	if maxValue <= 255 || maxValue >= 1 {
-		newMax := float64(maxValue) / float64(ppm.max)
-		ppm.max = int(maxValue)
+		newMax := float64(maxValue) / float64(ppm.max) // newMax is our Multiplicator
+		ppm.max = int(maxValue)                        // ppm.max becomes our new max value
+
+		// We run through the matrix
 		for i := 0; i < ppm.height; i++ {
 			for j := 0; j < ppm.width; j++ {
+				// We change the max value for each color
 				ppm.data[i][j].R = uint8(math.Round(float64(ppm.data[i][j].R) * float64(newMax)))
 				ppm.data[i][j].G = uint8(math.Round(float64(ppm.data[i][j].G) * float64(newMax)))
 				ppm.data[i][j].B = uint8(math.Round(float64(ppm.data[i][j].B) * float64(newMax)))
@@ -184,32 +188,32 @@ func (ppm *PPM) SetMaxValue(maxValue uint8) {
 	}
 }
 
-// Fonction pour faire faire un rotation a 90° dans le sens des aiguilles d'une montre a notre image
+// Function to rotate the image 90 degrees clockwise
 func (ppm *PPM) Rotate90CW() {
 
-	// Création d'une nouvelle matrice rotateData pour stocker les données de rotation
+	// Create a new rotateData matrix to store rotation data
 	rotateData := make([][]Pixel, ppm.width)
 	for i := range rotateData {
 		rotateData[i] = make([]Pixel, ppm.height)
 	}
 
-	// Parcours de la matrice d'origine pour effectuer la rotation
+	// Traverse the original matrix to perform the rotation
 	for i := 0; i < ppm.height; i++ {
 		for j := 0; j < ppm.width; j++ {
 			d := ppm.height - j - 1
-			rotateData[i][d] = ppm.data[j][i] // Stockage des données de rotation dans la nouvelle matrice
+			rotateData[i][d] = ppm.data[j][i] // Store rotation data in the new matrix
 		}
 	}
 
-	// On mets à jour les dimensions et les données de l'image avec la matrice rotateData
+	// Image dimensions and data are updated using the rotateData matrix
 	ppm.width, ppm.height = ppm.height, ppm.width
 	ppm.data = rotateData
 }
 
-// Fonction pour convertir de PPM a PGM
+// Function to convert from PPM to PGM
 func (ppm *PPM) ToPGM() *PGM {
 
-	//Création de pgm reprenant le pointeur de la struct PGM avec les memes valurs pour width, height, magicNumber et max
+	//Creation of pgm using the struct PGM pointer with the same values for width, height, magicNumber and max
 	pgm := &PGM{
 		magicNumber: "P2",
 		width:       ppm.width,
@@ -217,13 +221,13 @@ func (ppm *PPM) ToPGM() *PGM {
 		max:         ppm.max,
 	}
 
-	// Recréation de pgm.data
+	// Recreate pgm.data
 	pgm.data = make([][]uint8, ppm.height)
 	for i := range pgm.data {
 		pgm.data[i] = make([]uint8, ppm.width)
 	}
 
-	// On parcourt la matrice et on prend la moyenne des 3 couleurs pour avoir une valeur de gris pour pgm.data
+	// Scan the matrix and average the 3 colors to obtain a gray value for pgm.data
 	for i := 0; i < pgm.height; i++ {
 		for j := 0; j < pgm.width; j++ {
 			pgm.data[i][j] = (ppm.data[i][j].R + ppm.data[i][j].G + ppm.data[i][j].B) / 3
@@ -233,102 +237,102 @@ func (ppm *PPM) ToPGM() *PGM {
 	return pgm
 }
 
-// Fonction pour convertir de PPM a PBM
+// Function to convert from PPM to PBM
 func (ppm *PPM) ToPBM() *PBM {
 
-	// Création de pbm reprenant le pointeur de la struct PBM avec les memes valurs pour width, height, magicNumber
+	// Creation of pbm using the struct PBM pointer with the same values for width, height and magicNumber
 	pbm := &PBM{
 		magicNumber: "P1",
 		width:       ppm.width,
 		height:      ppm.height,
 	}
 
-	// Recréation de pbm.data
+	// Recreate pbm.data
 	data := make([][]bool, ppm.height)
 	for i := range data {
 		data[i] = make([]bool, ppm.width)
 	}
 
-	// Création de lim qui est ma valeur qui détermine si mon pixel sera blanc ou noir (inférieur a lim c'est blanc et au dessus noir)
+	// Create lim, which is my value that determines whether my pixel will be white or black (below lim it's white, above lim it's black).
 	lim := uint8(ppm.max / 2)
 
 	for i := 0; i < ppm.height; i++ {
 		for j := 0; j < ppm.width; j++ {
-			// Convertir chaque pixel en noir ou blanc en fonction de la limite
+			// Convert each pixel to black or white according to the limit
 			pbm.data[i][j] = ppm.data[i][j].R > lim || ppm.data[i][j].G > lim || ppm.data[i][j].B > lim
 		}
 	}
 	return pbm
 }
 
-// Pour la fonction DrawLine nous allons utiliser l'Algorithme de Bresenham.
+// For the DrawLine function, we'll use Bresenham's Algorithm.
 func (ppm *PPM) DrawLine(p1, p2 Point, color Pixel) {
-	// calcul du pas horizontal de notre droite
+	// calculate the horizontal pitch of our line
 	deltaX := p2.X - p1.X
-	if deltaX < 0 { // On utilisera les valeurs absolue de deltaX pour se diriger dans la bonne direction
+	if deltaX < 0 { // We'll use deltaX absolute values to point us in the right direction
 		deltaX = -deltaX
 	}
 
-	// calcul du pas vertical de notre droite
+	// calculate the vertical pitch of our line
 	deltaY := p2.Y - p1.Y
-	if deltaY < 0 { // On utilisera les valeurs absolue de deltaY pour se diriger dans la bonne direction
+	if deltaY < 0 { // We'll use the absolute values of deltaY to point us in the right direction.
 		deltaY = -deltaY
 	}
 
-	// Ici on calcul signX qui nous permet de savoir si on trace notre droite de gauche a droite ou l'inverse ( comme un coefficient directeur).
-	signX := -1 // Dans ce cas de droite a gauche.
+	// Here we calculate signX, which lets us know whether we're drawing our line from left to right or vice versa (like a directing coefficient).
+	signX := -1 // In this case from right to left.
 	if p1.X < p2.X {
-		signX = 1 // Dans ce cas de gauche a droite.
+		signX = 1 // In this case, left to right.
 	}
 
-	// Ici on calcul signY qui nous permet de savoir si on trace notre droite de bas en haut ou l'inverse.
-	signY := -1 // Dans ce cas de haut en bas. (C'est l'inverse de ce que l'on a en Math)
+	// Here we calculate signY, which lets us know whether we're drawing our line from bottom to top or vice versa.
+	signY := -1 // In this case from top to bottom (the opposite of what we normally have in Math)
 	if p1.Y < p2.Y {
-		signY = 1 // Dans ce cas de bas en haut.
+		signY = 1 // In this case from bottom to top.
 	}
 
 	err := deltaX - deltaY
 
-	// Création de la boucle de dessin de notre droite.
+	// Create the drawing loop for our right.
 	for {
 
-		// On vérifie que le pixel est dans les limites de l'image
+		// Check that the pixel is within the image boundaries
 		if p1.X >= 0 && p1.X < ppm.width && p1.Y >= 0 && p1.Y < ppm.height {
-			// Ici on colorie le pixel
+			// Here we color the pixel
 			ppm.Set(p1.X, p1.Y, color)
 		}
 
-		// Si la ligne a fini de se tracer on stop la boucle de dessin.
+		// If the line has finished drawing, stop the drawing loop.
 		if p1.X == p2.X && p1.Y == p2.Y {
 			break
 		}
 
-		// Cette Variable est utilisé pour savoir a quelle moment on va devoir avancer en direction de Y (verticalement)
+		// This Variable is used to determine when we need to move in the direction of Y (vertically).
 		err2 := 2 * err
 
-		// Si err2 est supérieur a l'opposé de deltaY on doit avancer dans la direction X
+		// If err2 is greater than the opposite of deltaY, we must move in the X direction.
 		if err2 > -deltaY {
-			err -= deltaY // On compense le fait que l'on a avancé dans la direction X
-			p1.X += signX // Et on fait le déplacement
+			err -= deltaY // We compensate for the fact that we've moved in direction X
+			p1.X += signX // And it move
 		}
 
-		// Si err2 est inférieur a deltaX on doit avancer dans la direction Y
+		// If err2 is less than deltaX, we must move in direction Y
 		if err2 < deltaX {
-			err += deltaX // On compense le fait que l'on a avancé dans la direction Y
-			p1.Y += signY // Et on fait le déplacement
+			err += deltaX // We compensate for the fact that we've moved in direction Y
+			p1.Y += signY // And it move
 		}
 
-		// Enfin on revérifie que le point est bien dans les limites
+		// Finally, we double-check that the point is within the limits
 		if p1.X < 0 || p1.X >= ppm.width || p1.Y < 0 || p1.Y >= ppm.height {
 			break
 		}
 	}
 }
 
-// Fonction pour dessiner un rectangle vide
+// Function to draw an empty rectangle
 func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
 
-	// On vérifie que les points soit au bon endroits
+	// Check that the points are not out of bounds
 	if p1.X < 0 {
 		p1.X = 0
 	}
@@ -343,80 +347,54 @@ func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
 		height = ppm.height - p1.Y
 	}
 
-	// On créer les 3 coins du rectangle (+ p1 dans la fonction soit 4 points en tout)
+	// Create the 3 corners of the rectangle (+ p1 in the function, either 4 points in all)
 	p2 := Point{p1.X + width, p1.Y}
 	p3 := Point{p1.X + width, p1.Y + height}
 	p4 := Point{p1.X, p1.Y + height}
 
-	// On les relie tous de telle sorte a faire une boucle
+	// We link them all so as to make a loop
 	ppm.DrawLine(p1, p2, color)
 	ppm.DrawLine(p2, p3, color)
 	ppm.DrawLine(p3, p4, color)
 	ppm.DrawLine(p4, p1, color)
 }
 
-// Fonction pour dessiner un rectangle plain
+// Function to draw a filled rectangle
 func (ppm *PPM) DrawFilledRectangle(p1 Point, width, height int, color Pixel) {
 
-	// On parcours ligne par ligne notre matrice
+	// We go through our matrix line by line
 	for i := 0; i < height; i++ {
 
-		// point1 et point2 sont de part et d’autre de la longueur du rectangle
+		// point1 and point2 are on either side of the length of the rectangle
 		point1 := Point{p1.X, p1.Y + i}
 		point2 := Point{p1.X + width, p1.Y + i}
-		ppm.DrawLine(point1, point2, color) // Et on les relie
+		ppm.DrawLine(point1, point2, color) // And we link them
 	}
 }
 
-// Fonction qui dessine un cercle plein
+// Function that draws a empty circle
 func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
 
-	//Création des variables nécéssaires
+	//Creation of required variables
 	x := radius - 1
 	y := 0
 	dx := 1
 	dy := 1
 	err := dx - (radius * 2)
 
-	// Tant que le cercle n'es pas entièrement dessiné
+	// Until the circle is not completely drawn
 	for x > y {
-		if x == radius-1 && y == 0 { // Top point
-			ppm.Set(center.X+x, center.Y+y+1, color)
-		} else {
-			ppm.Set(center.X+x, center.Y+y, color)
-		}
-
-		if x != y { // Avoid overwriting the top point with the right point
-			ppm.Set(center.X+y, center.Y+x, color)
-		}
-
-		if x == 0 && y == radius-1 { // Right point
-			ppm.Set(center.X-y, center.Y+x-1, color)
-		} else {
-			ppm.Set(center.X-y, center.Y+x, color)
-		}
-
+		// Colorize the pixel corresponding to the correct coordinates
+		ppm.Set(center.X+x, center.Y+y, color)
+		ppm.Set(center.X+y, center.Y+x, color)
+		ppm.Set(center.X-y, center.Y+x, color)
 		ppm.Set(center.X-x, center.Y+y, color)
-
-		if x == -radius+1 && y == 0 { // Bottom point
-			ppm.Set(center.X-x, center.Y-y-1, color)
-		} else {
-			ppm.Set(center.X-x, center.Y-y, color)
-		}
-
-		if x != y { // Avoid overwriting the bottom point with the left point
-			ppm.Set(center.X-y, center.Y-x, color)
-		}
-
-		if x == 0 && y == -radius+1 { // Left point
-			ppm.Set(center.X+y, center.Y-x+1, color)
-		} else {
-			ppm.Set(center.X+y, center.Y-x, color)
-		}
-
+		ppm.Set(center.X-x, center.Y-y, color)
+		ppm.Set(center.X-y, center.Y-x, color)
+		ppm.Set(center.X+y, center.Y-x, color)
 		ppm.Set(center.X+x, center.Y-y, color)
 
-		// On adapte err suivant la direction du dessin et on compense l'avancement (Basé aussi sur l'algorithme de Bresenham)
+		// We adapt err according to the direction of the drawing and compensate for the advance (also based on Bresenham's algorithm).
 		if err <= 0 {
 			y++
 			err += dy
@@ -430,14 +408,14 @@ func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
 	}
 }
 
-// Fonction qui dessine un cercle rempli
+// Function that draws a filled circle
 func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
 
 	for i := center.X - radius; i <= center.X+radius; i++ {
 		for j := center.Y - radius; j <= center.Y+radius; j++ {
-			// Calcul de la distance entre le point parcourant le tour du cercle et le centre du cercle (Formule de distance entre 2 points dans un cercle)
+			// Calculate the distance between the point circling the circle and the center of the circle (Formula for distance between 2 points)
 			distance := math.Sqrt((float64(i-center.X) * float64(i-center.X)) + (float64(j-center.Y) * float64(j-center.Y)))
-			// Si la distance est inférieure ou égale au rayon du cercle on colorie le pixel
+			// If the distance is less than or equal to the radius of the circle, the pixel is colored.
 			if distance <= float64(radius) {
 				ppm.Set(i, j, color)
 			}
@@ -445,36 +423,26 @@ func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
 	}
 }
 
-// Fonction qui dessine un triangle vide
+// Function that draws an empty triangle
 func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
-	// Il suffit de relier nos 3 points
+	// We just need to link our 3 points between them
 	ppm.DrawLine(p1, p2, color)
 	ppm.DrawLine(p2, p3, color)
 	ppm.DrawLine(p3, p1, color)
 }
 
-// Fonction qui dessine un triangle plein
+// Function that draws an filled triangle
 func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
 
 }
 
-// Fonction qui dessine un polygone vide
+// Function that draws an empty polygon
 func (ppm *PPM) DrawPolygon(points []Point, color Pixel) {
-	// On parcours tout les points un par un pour les relier entre eux
+	// We go through all the points one by one to link them together
 	for i := 0; i < len(points)-1; i++ {
 		ppm.DrawLine(points[i], points[i+1], color)
 	}
 
-	// On trace la dernière droite du dernier au premier point
+	// Draw the last straight line from the last point to the first point
 	ppm.DrawLine(points[len(points)-1], points[0], color)
-}
-
-func main() {
-	ppm, _ := ReadPPM("test.ppm")
-	color := Pixel{R: 255, G: 0, B: 0}
-	point1 := Point{X: 1, Y: 3}
-	point2 := Point{X: 4, Y: 2}
-	point3 := Point{X: 8, Y: 3}
-	ppm.DrawTriangle(point1, point2, point3, color)
-	ppm.Save("testsave.ppm")
 }

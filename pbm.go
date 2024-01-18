@@ -185,6 +185,7 @@ func (pbm *PBM) Save(filename string) error {
 	if error != nil {
 		return error
 	}
+	defer fileSave.Close() // Close the file once the function is done
 
 	// Write the values of magicNumber, width, and height to the save file
 	fmt.Fprintf(fileSave, "%s\n%d %d\n", pbm.magicNumber, pbm.width, pbm.height)
