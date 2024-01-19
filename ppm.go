@@ -2,6 +2,7 @@ package Netpbm
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"os"
@@ -85,7 +86,48 @@ func ReadPPM(filename string) (*PPM, error) {
 
 	// If magic Number is P6
 	if magicNumber == "P6" {
+		var bin string
 
+		// Create a matrix to store characters as a string of 8 bits
+		databin := make([][]string, height)
+		for m := range databin {
+			databin[m] = make([]string, 3*width)
+		}
+
+		// Retrieve the data into a byte array
+		scanner.Scan()
+		byte_array := scanner.Bytes()
+		x := 0
+		y := 0
+
+		for g := 0; g < len(byte_array); g++ {
+
+			// Convert the different characters into a string of 8 bits
+			format := fmt.Sprintf("%s%d%s", "%0", 8, "b")
+
+			bin = fmt.Sprintf(format, byte_array[g])
+
+			// Complete the matrix
+			databin[y][x] = bin
+
+			x++
+			if x == 3*width { // Multiplacate by 3 because one pixel is equal to 3 value because we are in RGB
+				x = 0
+				y = y + 1
+			}
+		}
+
+		// Convert the bit strings to uint8 but this time for each color
+		for i := 0; i < height; i++ {
+			for j := 0; j < width; j++ {
+				r, _ := strconv.ParseInt(databin[i][j*3], 2, 0)
+				g, _ := strconv.ParseInt(databin[i][j*3+1], 2, 0)
+				b, _ := strconv.ParseInt(databin[i][j*3+2], 2, 0)
+
+				// And we stock it in data for each color (depend of start value 0, 1, 2 to know which color is it)
+				data[i][j] = Pixel{uint8(r), uint8(g), uint8(b)}
+			}
+		}
 	}
 
 	// Return each element of the struct
@@ -115,17 +157,65 @@ func (ppm *PPM) Save(filename string) error {
 	if error != nil {
 		return error
 	}
+	defer fileSave.Close()
 
-	// Write the values of magicNumber, width, height, and max to the save file
-	fmt.Fprintf(fileSave, "%s\n%d %d\n %d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
-
-	// Iterate through the data matrix
-	for i := range ppm.data {
-		for j := range ppm.data[i] {
-			// Write each value of data to its correct position in the save file, color by color
-			fmt.Fprintf(fileSave, "%d %d %d ", ppm.data[i][j].R, ppm.data[i][j].G, ppm.data[i][j].B)
+	// If magicNumber is P3
+	if ppm.magicNumber == "P3" {
+		// Write the values of magicNumber, width, height, and max to the save file
+		fmt.Fprintf(fileSave, "%s\n%d %d\n%d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
+		// Iterate through the data matrix
+		for i := range ppm.data {
+			for j := range ppm.data[i] {
+				// Write each value of data to its correct position in the save file, color by color
+				fmt.Fprintf(fileSave, "%d %d %d ", ppm.data[i][j].R, ppm.data[i][j].G, ppm.data[i][j].B)
+			}
+			fmt.Fprintln(fileSave)
 		}
-		fmt.Fprintln(fileSave)
+	}
+
+	// If magicNumber is P6
+	if ppm.magicNumber == "P6" {
+
+		// Write to FileSave (with the correct format) the values of magicNumber, width, height, and max
+		fmt.Fprintf(fileSave, "%s\n%d %d\n%d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
+
+		// Retrieve the values of each pixel as a string of 8 bits
+		datastring_bin := make([][]string, ppm.height)
+		for m := range datastring_bin {
+			datastring_bin[m] = make([]string, ppm.width)
+		}
+		// Convert the values of the pixels to a string of 8 bits for each color
+		for i := 0; i < ppm.height; i++ {
+			for j := 0; j < ppm.height; j++ {
+				r := int64(ppm.data[i][j].R)
+				g := int64(ppm.data[i][j].G)
+				b := int64(ppm.data[i][j].B)
+				datastring_bin[i][j] = strconv.FormatInt(r, 2) + strconv.FormatInt(g, 2) + strconv.FormatInt(b, 2)
+			}
+		}
+
+		// Convert the values of each pixel to an 8-bit version in hexadecimal form
+		for i := 0; i < ppm.height; i++ {
+			for j := 0; j < ppm.width; j++ {
+
+				ui, _ := strconv.ParseUint(datastring_bin[i][j], 2, 64)
+				hexa := fmt.Sprintf("%x", ui)
+				if len(hexa)%2 == 0 {
+
+					datastring_bin[i][j] = hexa
+				} else {
+					datastring_bin[i][j] = "0" + hexa
+				}
+			}
+		}
+
+		// Decode hexadecimal into a readable character
+		for i := 0; i < ppm.height; i++ {
+			for j := 0; j < ppm.width; j++ {
+				decoded, _ := hex.DecodeString(datastring_bin[i][j])
+				fmt.Fprintf(fileSave, string(decoded)) // Finally, write our result to the save file
+			}
+		}
 	}
 	return nil
 }
@@ -253,15 +343,17 @@ func (ppm *PPM) ToPBM() *PBM {
 		data[i] = make([]bool, ppm.width)
 	}
 
-	// Create lim, which is my value that determines whether my pixel will be white or black (below lim it's white, above lim it's black).
-	lim := uint8(ppm.max / 2)
+	// Assign data to pbm.data
+	pbm.data = data
 
 	for i := 0; i < ppm.height; i++ {
 		for j := 0; j < ppm.width; j++ {
 			// Convert each pixel to black or white according to the limit
-			pbm.data[i][j] = ppm.data[i][j].R > lim || ppm.data[i][j].G > lim || ppm.data[i][j].B > lim
+			lim := (uint16(ppm.data[i][j].R) + uint16(ppm.data[i][j].G) + uint16(ppm.data[i][j].B)) / 3
+			pbm.data[i][j] = lim < uint16(ppm.max/2)
 		}
 	}
+
 	return pbm
 }
 
@@ -363,7 +455,7 @@ func (ppm *PPM) DrawRectangle(p1 Point, width, height int, color Pixel) {
 func (ppm *PPM) DrawFilledRectangle(p1 Point, width, height int, color Pixel) {
 
 	// We go through our matrix line by line
-	for i := 0; i < height; i++ {
+	for i := 0; i < height+1; i++ {
 
 		// point1 and point2 are on either side of the length of the rectangle
 		point1 := Point{p1.X, p1.Y + i}
@@ -375,49 +467,41 @@ func (ppm *PPM) DrawFilledRectangle(p1 Point, width, height int, color Pixel) {
 // Function that draws a empty circle
 func (ppm *PPM) DrawCircle(center Point, radius int, color Pixel) {
 
-	//Creation of required variables
-	x := radius - 1
-	y := 0
-	dx := 1
-	dy := 1
-	err := dx - (radius * 2)
+	// We go through the matrix
+	for i := 0; i < ppm.height; i++ {
+		for j := 0; j < ppm.width; j++ {
+			deltaX := float64(i) - float64(center.X)
+			deltaY := float64(j) - float64(center.Y)
+			distance := math.Sqrt(deltaX*deltaX + deltaY*deltaY)
 
-	// Until the circle is not completely drawn
-	for x > y {
-		// Colorize the pixel corresponding to the correct coordinates
-		ppm.Set(center.X+x, center.Y+y, color)
-		ppm.Set(center.X+y, center.Y+x, color)
-		ppm.Set(center.X-y, center.Y+x, color)
-		ppm.Set(center.X-x, center.Y+y, color)
-		ppm.Set(center.X-x, center.Y-y, color)
-		ppm.Set(center.X-y, center.Y-x, color)
-		ppm.Set(center.X+y, center.Y-x, color)
-		ppm.Set(center.X+x, center.Y-y, color)
-
-		// We adapt err according to the direction of the drawing and compensate for the advance (also based on Bresenham's algorithm).
-		if err <= 0 {
-			y++
-			err += dy
-			dy += 2
-		}
-		if err > 0 {
-			x--
-			dx += 2
-			err += dx - (radius * 2)
+			if math.Abs(distance-float64(radius)) < 1.0 && distance < float64(radius) {
+				ppm.Set(i, j, color)
+			}
 		}
 	}
+	ppm.Set(center.X-(radius-1), center.Y, color)
+	ppm.Set(center.X+(radius-1), center.Y, color)
+	ppm.Set(center.X, center.Y+(radius-1), color)
+	ppm.Set(center.X, center.Y-(radius-1), color)
 }
 
 // Function that draws a filled circle
 func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
 
-	for i := center.X - radius; i <= center.X+radius; i++ {
-		for j := center.Y - radius; j <= center.Y+radius; j++ {
-			// Calculate the distance between the point circling the circle and the center of the circle (Formula for distance between 2 points)
-			distance := math.Sqrt((float64(i-center.X) * float64(i-center.X)) + (float64(j-center.Y) * float64(j-center.Y)))
-			// If the distance is less than or equal to the radius of the circle, the pixel is colored.
-			if distance <= float64(radius) {
-				ppm.Set(i, j, color)
+	ppm.DrawCircle(center, radius, color)
+	for i := 0; i < ppm.height; i++ {
+		var positions []int
+		var number_points int
+		for j := 0; j < ppm.width; j++ {
+			if ppm.data[i][j] == color {
+				number_points += 1
+				positions = append(positions, j)
+			}
+		}
+		if number_points > 1 {
+			for k := positions[0] + 1; k < positions[len(positions)-1]; k++ {
+				ppm.data[i][k] = color
+
 			}
 		}
 	}
@@ -425,6 +509,7 @@ func (ppm *PPM) DrawFilledCircle(center Point, radius int, color Pixel) {
 
 // Function that draws an empty triangle
 func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
+
 	// We just need to link our 3 points between them
 	ppm.DrawLine(p1, p2, color)
 	ppm.DrawLine(p2, p3, color)
@@ -434,6 +519,26 @@ func (ppm *PPM) DrawTriangle(p1, p2, p3 Point, color Pixel) {
 // Function that draws an filled triangle
 func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
 
+	// We call our function to draw an empty Triangle
+	ppm.DrawTriangle(p1, p2, p3, color)
+
+	for i := 0; i < ppm.height; i++ { // We run through the matrix
+		var positions []int   // We initialize the positions to color
+		var number_points int // and how many points to color
+
+		for j := 0; j < ppm.width; j++ {
+			if ppm.data[i][j] == color { // if data equal a part of our a empty triangle (The ribs of the triangle)
+				number_points += 1 // number of points to color in the triangle increase
+				positions = append(positions, j)
+			}
+		}
+
+		if number_points == 2 { // If on the line there is ONLY 2 points colored (left and right part of our triangle)
+			for k := positions[0] + 1; k < positions[1]; k++ { // k run through the line inside the triangle
+				ppm.data[i][k] = color // we color the triangle
+			}
+		}
+	}
 }
 
 // Function that draws an empty polygon
@@ -443,6 +548,29 @@ func (ppm *PPM) DrawPolygon(points []Point, color Pixel) {
 		ppm.DrawLine(points[i], points[i+1], color)
 	}
 
-	// Draw the last straight line from the last point to the first point
+	// Draw the last straight line from the last point to the first point (close the loop)
 	ppm.DrawLine(points[len(points)-1], points[0], color)
+}
+
+func (ppm *PPM) DrawFilledPolygon(points []Point, color Pixel) {
+
+	// We call our function to draw an empty Polygon
+	ppm.DrawPolygon(points, color)
+
+	for i := 0; i < ppm.height; i++ { // We run through the matrix
+		var positions []int   // We initialize the positions to color
+		var number_points int // and how many points to color
+		for j := 0; j < ppm.width; j++ {
+			if ppm.data[i][j] == color { // if data equal a part of our a empty polygon (The ribs of the polygon)
+				number_points += 1 // number of points to color in the polygon increase
+				positions = append(positions, j)
+			}
+		}
+		if number_points == 2 { // If on the line there is ONLY 2 points colored (left and right part of our polygon)
+			for k := positions[0] + 1; k < positions[1]; k++ { // k run through the line inside the polygon
+				ppm.data[i][k] = color // we color the polygon
+
+			}
+		}
+	}
 }

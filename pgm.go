@@ -88,16 +88,16 @@ func ReadPGM(filename string) (*PGM, error) {
 
 		// Retrieve the data into a byte array
 		scanner.Scan()
-		a := scanner.Bytes()
+		byte_array := scanner.Bytes()
 		x := 0
 		y := 0
 
-		for g := 0; g < len(a); g++ {
+		for g := 0; g < len(byte_array); g++ {
 
 			// Convert the different characters into a string of 8 bits
 			format := fmt.Sprintf("%s%d%s", "%0", 8, "b")
 
-			bin = fmt.Sprintf(format, a[g])
+			bin = fmt.Sprintf(format, byte_array[g])
 
 			// Complete the matrix
 			databin[y][x] = bin
@@ -113,12 +113,7 @@ func ReadPGM(filename string) (*PGM, error) {
 		// Convert the bit strings to uint8
 		for i := 0; i < height; i++ {
 			for j := 0; j < width; j++ {
-				result, err := strconv.ParseInt(databin[i][j], 2, 0)
-
-				if err != nil {
-					fmt.Println("Error:", err)
-				}
-
+				result, _ := strconv.ParseInt(databin[i][j], 2, 0)
 				data[i][j] = uint8(result) // Fill data with our final converted values
 
 			}
@@ -169,6 +164,7 @@ func (pgm *PGM) Save(filename string) error {
 		}
 	}
 
+	// If magicNumber is P5
 	if pgm.magicNumber == "P5" {
 
 		// Write to FileSave (with the correct format) the values of magicNumber, width, height, and max
@@ -191,10 +187,7 @@ func (pgm *PGM) Save(filename string) error {
 		for i := 0; i < pgm.height; i++ {
 			for j := 0; j < pgm.width; j++ {
 
-				ui, err := strconv.ParseUint(datastring_bin[i][j], 2, 64)
-				if err != nil {
-					return err
-				}
+				ui, _ := strconv.ParseUint(datastring_bin[i][j], 2, 64)
 				hexa := fmt.Sprintf("%x", ui)
 				if len(hexa)%2 == 0 {
 
@@ -208,11 +201,8 @@ func (pgm *PGM) Save(filename string) error {
 		// Decode hexadecimal into a readable character
 		for i := 0; i < pgm.height; i++ {
 			for j := 0; j < pgm.width; j++ {
-				decoded, err := hex.DecodeString(datastring_bin[i][j])
-				if err != nil {
-					fmt.Println("Hexadecimal decoding error:", err)
-					return err
-				}
+				decoded, _ := hex.DecodeString(datastring_bin[i][j])
+
 				fmt.Fprintf(fileSave, string(decoded)) // Finally, write our result to the save file
 			}
 		}
@@ -259,14 +249,16 @@ func (pgm *PGM) SetMagicNumber(magicNumber string) {
 
 // Function to change the max color value
 func (pgm *PGM) SetMaxValue(maxValue uint8) {
-	newMax := float64(maxValue) / float64(pgm.max) // newMax is our Multiplicator
-	pgm.max = int(maxValue)                        // pgm.max becomes our new max value
+	if maxValue <= 255 || maxValue >= 1 {
+		newMax := float64(maxValue) / float64(pgm.max) // newMax is our Multiplicator
+		pgm.max = int(maxValue)                        // pgm.max becomes our new max value
 
-	// We run through the matrix
-	for i := 0; i < pgm.height; i++ {
-		for j := 0; j < pgm.width; j++ {
-			// We change the max
-			pgm.data[i][j] = uint8(float64(pgm.data[i][j]) * float64(newMax))
+		// We run through the matrix
+		for i := 0; i < pgm.height; i++ {
+			for j := 0; j < pgm.width; j++ {
+				// We change the max
+				pgm.data[i][j] = uint8(float64(pgm.data[i][j]) * float64(newMax))
+			}
 		}
 	}
 }
@@ -305,11 +297,11 @@ func (pgm *PGM) ToPBM() *PBM {
 	}
 
 	// Iterate over the PGM matrix
-	for y := 0; y < pgm.height; y++ {
-		pbm.data[y] = make([]bool, pgm.width)
-		for x := 0; x < pgm.width; x++ {
+	for i := 0; i < pgm.height; i++ {
+		pbm.data[i] = make([]bool, pgm.width)
+		for j := 0; j < pgm.width; j++ {
 			// Convert each pixel value to a boolean value based on the limit
-			pbm.data[y][x] = pgm.data[y][x] < uint8(pgm.max/2)
+			pbm.data[i][j] = pgm.data[i][j] < uint8(pgm.max/2)
 		}
 	}
 	return pbm

@@ -716,3 +716,24 @@ func TestPPMDrawPolygon(t *testing.T) {
 		}
 	}
 }
+
+func TestPPMDrawFilledPolygon(t *testing.T) {
+	ppm, err := ReadPPM("./testImages/ppm/blank.ppm")
+	if err != nil {
+		t.Error(err)
+	}
+	ppm.DrawFilledPolygon([]Point{
+		{X: 3, Y: 1},
+		{X: 0, Y: 10},
+		{X: 10, Y: 10},
+		{X: 10, Y: 1},
+	}, Pixel{R: 0, G: 255, B: 0})
+
+	for i := 0; i < imageWidth*imageHeight; i++ {
+		x := i % imageWidth
+		y := i / imageWidth
+		if ppm.data[y][x] != imagePPMDrawFilledPolygon[i] {
+			t.Errorf("Pixel at (%d, %d) not drawn correctly wanted %v got %v", x, y, imagePPMDrawFilledPolygon[i], ppm.data[y][x])
+		}
+	}
+}

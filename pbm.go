@@ -88,7 +88,7 @@ func ReadPBM(filename string) (*PBM, error) {
 			data_hexa[g] = make([]int, nbr_byte)
 		}
 
-		var bin string
+		var bin string // bin is to stock binaries string of a caracters
 
 		// Create a third matrix to store each value as 8 bits
 		data_bin := make([][]string, height)
@@ -99,16 +99,16 @@ func ReadPBM(filename string) (*PBM, error) {
 		// Scan the data and put it into a byte array
 		scanner.Scan()
 
-		a := scanner.Bytes()
+		byte_array := scanner.Bytes()
 		x := 0
 		y := 0
 
-		for g := 0; g < len(a); g++ {
+		for g := 0; g < len(byte_array); g++ {
 
 			// Conversion of hexadecimal characters into 8 bits
 
 			format := fmt.Sprintf("%s%d%s", "%0", 8, "b") // Create the conversion format
-			data_hexa[y][x] = int(a[g])
+			data_hexa[y][x] = int(byte_array[g])
 
 			bin = fmt.Sprintf(format, data_hexa[y][x])
 
@@ -135,6 +135,7 @@ func ReadPBM(filename string) (*PBM, error) {
 		for m := range databit_without_padding {
 			databit_without_padding[m] = make([]rune, width)
 		}
+
 		for i := 0; i < height; i++ {
 			bit := []rune(datastring[i])
 			for j := 0; j < width; j++ {
@@ -208,10 +209,10 @@ func (pbm *PBM) Save(filename string) error {
 	// If the magicNumber is P4
 	if pbm.magicNumber == "P4" {
 		// Select the number of bytes present on a line
-		number_bytes := math.Round(float64(pbm.width/8) + 1)
+		number_bytes := math.Round(float64(pbm.width/8) + 1) // + 1 car arrondi inférieur stict
 
 		// Calculate the number of padding bits
-		padding_bytes := 8 * number_bytes / float64(pbm.width)
+		padding_bytes := 8*number_bytes - float64(pbm.width)
 
 		// If there are padding bits, create a matrix to store the data in bits (0 or 1)
 		datarune_padding := make([][]rune, pbm.height)
@@ -247,16 +248,16 @@ func (pbm *PBM) Save(filename string) error {
 		// Complete the matrix with the bytes
 		for i := 0; i < pbm.height; i++ {
 			for j := 0; j < int(number_bytes); j++ {
-				var a string
+				var byte_array string
 
 				for m := 8 * j; m < 8*(1+j); m++ {
 
 					b := fmt.Sprintf("%v", datarune_padding[i][m])
 
-					a = a + b
+					byte_array = byte_array + b
 
 				}
-				datastring_padding[i][j] = a
+				datastring_padding[i][j] = byte_array
 
 			}
 
@@ -265,10 +266,7 @@ func (pbm *PBM) Save(filename string) error {
 		for i := 0; i < pbm.height; i++ {
 			for j := 0; j < int(number_bytes); j++ {
 
-				ui, err := strconv.ParseUint(datastring_padding[i][j], 2, 64)
-				if err != nil {
-					return err
-				}
+				ui, _ := strconv.ParseUint(datastring_padding[i][j], 2, 64) // to pass from bit chain to hexadecimal
 				hexa := fmt.Sprintf("%x", ui)
 				if len(hexa)%2 == 0 {
 
@@ -282,12 +280,8 @@ func (pbm *PBM) Save(filename string) error {
 		// Convert hexadecimal to characters
 		for i := 0; i < pbm.height; i++ {
 			for j := 0; j < int(number_bytes); j++ {
-				decoded, err := hex.DecodeString(datastring_padding[i][j])
-				if err != nil {
-					fmt.Println("Hexadecimal decoding error:", err)
-					return err
-				}
-				fmt.Fprintf(fileSave, string(decoded)) // And write the result to our save file
+				decoded, _ := hex.DecodeString(datastring_padding[i][j]) // it's to decode from hexadecimal to caracters
+				fmt.Fprintf(fileSave, string(decoded))                   // And write the result to our save file
 			}
 		}
 	}
