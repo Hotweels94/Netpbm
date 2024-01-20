@@ -320,7 +320,8 @@ func (ppm *PPM) ToPGM() *PGM {
 	// Scan the matrix and average the 3 colors to obtain a gray value for pgm.data
 	for i := 0; i < pgm.height; i++ {
 		for j := 0; j < pgm.width; j++ {
-			pgm.data[i][j] = (ppm.data[i][j].R + ppm.data[i][j].G + ppm.data[i][j].B) / 3
+			grey := (float64(ppm.data[i][j].R) + float64(ppm.data[i][j].G) + float64(ppm.data[i][j].B)) / 3
+			pgm.data[i][j] = uint8(grey)
 		}
 	}
 
