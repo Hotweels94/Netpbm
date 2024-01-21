@@ -2,7 +2,6 @@ package Netpbm
 
 import (
 	"bufio"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"os"
@@ -176,44 +175,13 @@ func (ppm *PPM) Save(filename string) error {
 	// If magicNumber is P6
 	if ppm.magicNumber == "P6" {
 
-		// Write to FileSave (with the correct format) the values of magicNumber, width, height, and max
+		// Write the values of magicNumber, width, height, and max to the save file
 		fmt.Fprintf(fileSave, "%s\n%d %d\n%d\n", ppm.magicNumber, ppm.width, ppm.height, ppm.max)
 
-		// Retrieve the values of each pixel as a string of 8 bits
-		datastring_bin := make([][]string, ppm.height)
-		for m := range datastring_bin {
-			datastring_bin[m] = make([]string, ppm.width)
-		}
-		// Convert the values of the pixels to a string of 8 bits for each color
-		for i := 0; i < ppm.height; i++ {
-			for j := 0; j < ppm.height; j++ {
-				r := int64(ppm.data[i][j].R)
-				g := int64(ppm.data[i][j].G)
-				b := int64(ppm.data[i][j].B)
-				datastring_bin[i][j] = strconv.FormatInt(r, 2) + strconv.FormatInt(g, 2) + strconv.FormatInt(b, 2)
-			}
-		}
-
-		// Convert the values of each pixel to an 8-bit version in hexadecimal form
-		for i := 0; i < ppm.height; i++ {
-			for j := 0; j < ppm.width; j++ {
-
-				ui, _ := strconv.ParseUint(datastring_bin[i][j], 2, 64)
-				hexa := fmt.Sprintf("%x", ui)
-				if len(hexa)%2 == 0 {
-
-					datastring_bin[i][j] = hexa
-				} else {
-					datastring_bin[i][j] = "0" + hexa
-				}
-			}
-		}
-
-		// Decode hexadecimal into a readable character
-		for i := 0; i < ppm.height; i++ {
-			for j := 0; j < ppm.width; j++ {
-				decoded, _ := hex.DecodeString(datastring_bin[i][j])
-				fmt.Fprintf(fileSave, string(decoded)) // Finally, write our result to the save file
+		// We run through the matrix
+		for _, line := range ppm.data {
+			for _, value := range line {
+				fileSave.Write([]byte{value.R, value.G, value.B}) // Write the RGB values of each pixel to the file
 			}
 		}
 	}
